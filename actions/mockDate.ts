@@ -11,11 +11,11 @@ type WindowWithTimekeeper = typeof window & {
 
 /**
  * NOTE:
- * Подменяет объект Date объектом, в котором дата выставлена на указанную
+ * Replaces the Date object with an object in which the date is set to the specified one.
  *
- * Дата и время не фиксируются, а идут с обычной скоростью, но начиная с указанной.
+ * The date and time are not fixed, but go at the usual speed, but starting from the specified one.
  *
- * Используйте playwright API Clock https://playwright.dev/docs/clock
+ * Use playwright API Clock https://playwright.dev/docs/clock
  */
 export async function mockDate(
     page: Page,

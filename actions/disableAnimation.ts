@@ -9,10 +9,10 @@ const styleForDisableAnimation = /* css */ `{
 }`;
 
 /**
- * Отключает анимацию в CSS
+ * Disables animation in CSS
  *
  * @param page
- * @param allowFor CSS-селекторы элементов, для которых нужно разрешить анимацию
+ * @param allowFor CSS selectors for elements to enable animation for
  */
 export function disableAnimations(page: Page, allowFor?: string[]) {
     const selector = allowFor && allowFor.length !== 0 ? `:not(${allowFor.join(',')})` : '*';
@@ -32,7 +32,7 @@ export function disableAnimations(page: Page, allowFor?: string[]) {
                 document.head.appendChild(style);
             }
 
-            // Скрипт, добавленный через addInitScript, срабатывает до построения DOM
+            // Script added via addInitScript runs before DOM is built
             if (document.readyState === 'complete') {
                 injectStyles();
             } else {

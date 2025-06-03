@@ -8,11 +8,11 @@ type InitScriptArg = {
 };
 
 /**
- * Восстанавливает в браузере сохранённые записи localStorage
+ * Restores saved localStorage records in the browser
  *
- * @param context Контекст браузера
- * @param origins Перечень записей в localStorage для восстановления
- * @param append Добавить к существующим записям (иначе — сначала чистим)
+ * @param context Browser context
+ * @param origins List of localStorage entries to restore
+ * @param append Append to existing entries (otherwise - clear first)
  */
 export async function restoreLocalStorage(
     context: BrowserContext,

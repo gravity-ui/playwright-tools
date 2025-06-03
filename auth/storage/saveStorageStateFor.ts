@@ -4,11 +4,10 @@ import { getStorageState } from './getStorageState';
 import type { AuthActions } from './getStorageState';
 
 /**
- * Выполняет аутентификацию в отдельном браузерном контексте и сохраняет
- * снимок браузерного хранилища по заданному ключу
+ * Performs authentication in a separate browser context and saves a snapshot of the browser storage by the given key
  *
- * @param key Ключ, по которому нужно сохранить состояние браузерного хранилища
- * @param authActions Действия по аутентификации
+ * @param key The key to save the browser storage state with
+ * @param authActions Authentication actions
  */
 export async function saveStorageStateFor(key: string, authActions: AuthActions) {
     const storageState = await getStorageState(authActions);

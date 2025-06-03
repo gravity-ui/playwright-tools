@@ -47,7 +47,7 @@ function initLocalUtilsDispatcherPatch(transform: HarTransformFunction) {
 }
 
 /**
- * Позволяет внести изменения в JSON, прочитанный из открытого HAR-файла
+ * Allows you to make changes to the JSON read from an open HAR file
  */
 export function addHarOpenTransform(transform: HarTransformFunction) {
     if (!patchInited) {

@@ -3,32 +3,32 @@ import { setTimeout } from 'node:timers/promises';
 import { fetchWithoutRejectUnauthorized } from './fetchWithoutRejectUnauthorized';
 
 export type WaitHttpServiceOptions = {
-    /** Проверяемый URL */
+    /** URL to check */
     url: string;
     /**
-     * Метод запроса
+     * Request Method
      * @default 'HEAD'
      */
     method?: string;
     /**
-     * Ожидаемый статус ответа
+     * Expected response status
      * @default 200
      */
     expectedStatus?: number;
     /**
-     * Интервал между запросами
+     * Interval between requests
      * @default 1000
      */
     interval?: number;
     /**
-     * Время ожидания
+     * Waiting time
      * @default Infinity
      */
     timeout?: number;
 };
 
 /**
- * Ожидает ответа с нужным статусом на заданном URL
+ * Waits for a response with the required status at the given URL
  */
 export async function waitHttpService({
     url,

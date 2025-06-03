@@ -1,9 +1,9 @@
 import { hasState } from '../../data/storageStates';
 
 /**
- * Проверяет, есть ли снимок браузерного хранилища для заданного ключа
+ * Checks if there is a snapshot of the browser storage for the given key
  *
- * @param key Ключ, под которых сохранён снимок браузерного хранилища
+ * @param key The key by which the snapshot of the browser storage is saved
  */
 export function hasStorageStateFor(key: string) {
     return hasState(key);

@@ -37,7 +37,7 @@ function initHarRecorderPatch(transform: EntryTransformFunction) {
 }
 
 /**
- * Позволяет внести изменения в JSON, который будет записан в HAR-файл
+ * Allows you to make changes to the JSON that will be written to the HAR file
  */
 export function addHarRecorderTransform(transform: EntryTransformFunction) {
     if (!patchInited) {

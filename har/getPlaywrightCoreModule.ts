@@ -1,7 +1,7 @@
 import { dirname, resolve } from 'path';
 
 /**
- * Находит расположение внутреннего модуля playwright-core для патчинга
+ * Finds the location of the internal playwright-core module for patching
  */
 export function getPlaywrightCoreModule(path: string) {
     let globalModule;

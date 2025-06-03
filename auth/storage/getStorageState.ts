@@ -4,11 +4,12 @@ import type { Page } from '@playwright/test';
 export type AuthActions = (page: Page) => Promise<void>;
 
 /**
- * Выполняет аутентификацию в отдельном браузерном контексте и возвращает
- * снимок браузерного хранилища
+ * Performs authentication in a separate browser context and returns
+ * a snapshot of the browser storage
  *
- * @param authActions Действия по аутентификации
+ * @param authActions Authentication actions
  */
+
 export async function getStorageState(authActions: AuthActions) {
     const browser = await chromium.launch();
     const page = await browser.newPage();

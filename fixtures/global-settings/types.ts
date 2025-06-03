@@ -3,7 +3,7 @@ import type { PartialGlobalSettings } from '../../data/globalSettings';
 
 export type GlobalSettingsFixturesBuilderParams = {
     /**
-     * Глобальные настройки, которые необходимо переопределить
+     * Global settings that need to be overridden
      */
     globalSettings: PartialGlobalSettings;
 };

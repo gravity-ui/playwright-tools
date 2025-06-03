@@ -1,13 +1,13 @@
 /**
- * Извлекает идентификатор теста для использования в пути к артефактам теста
+ * Retrieves a test ID for use in the test artifact path.
  *
- * Предполагается, что идентификатор записан в конце названия теста в квадратных скобках:
+ * It is assumed that the identifier is written at the end of the test name in square brackets:
  * `'My test title [my-test]'`
- * Иначе формируется из названия, исключая все спец символы, например:
+ * Otherwise, it is formed from the name, excluding all special characters, for example:
  * `'My test title 1 @test @tag'` -> `'my-test-title-1-test-tag'`
  *
- * @param title Название теста
- * @param allowToUseTitle Требуется, чтобы в названии был указан slug специальным образом (иначе будет использован сам title)
+ * @param title test name
+ * @param allowToUseTitle Requires the slug to be specified in a specific way in the title (otherwise the title itself will be used)
  */
 export function extractTestSlug(title: string, allowToUseTitle = true) {
     const matches = /\[([^[\]]+)\]$/.exec(title);

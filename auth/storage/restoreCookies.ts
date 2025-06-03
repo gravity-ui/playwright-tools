@@ -3,11 +3,11 @@ import type { BrowserContext } from '@playwright/test';
 import type { StorageState } from '../../data/storageStates';
 
 /**
- * Восстанавливает в браузере сохранённые куки
+ * Restores saved cookies in the browser
  *
- * @param context Контекст браузера
- * @param cookies Перечень кук для восстановления
- * @param append Добавить к существующим кукам (иначе — сначала чистим)
+ * @param context Browser context
+ * @param cookies List of cookies to restore
+ * @param append Add to existing cookies (otherwise - clear first)
  */
 export async function restoreCookies(
     context: BrowserContext,

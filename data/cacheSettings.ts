@@ -1,17 +1,17 @@
 /**
- * Расположение кэша данных на файловой системе
+ * Location of data cache on file system
  */
 export const cacheSettings = {
     /**
-     * Кэширование данных аутентификации
+     * Caching authentication data
      */
     auth: {
         /**
-         * Путь до директории, где должны храниться файлы кэша
+         * Path to the directory where the cache files should be stored
          */
         path: undefined as string | undefined,
         /**
-         * Время жизни кэша
+         * Cache TTL
          */
         ttl: 30 * 60 * 1000,
     },

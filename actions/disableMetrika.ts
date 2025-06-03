@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Отключает выбранные счётчики Метрики через стандартное апи
+ * Disables selected Metrica counters via standard API
  * {@see https://yandex.ru/support/metrica/general/user-opt-out.html}
  */
 export async function disableMetrika(page: Page, { counters }: { counters: number[] }) {

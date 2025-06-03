@@ -1,7 +1,7 @@
 import { URL } from 'url';
 
 /**
- * Возвращает домен для кук на основе baseURL из конфига
+ * Returns the domain for cookies based on the baseURL from the config
  */
 export function getCookieDomain(baseURL: string) {
     const parsedBaseUrl = new URL(baseURL);

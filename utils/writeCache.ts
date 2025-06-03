@@ -2,11 +2,11 @@ import { mkdir, writeFile } from 'fs/promises';
 import { resolve } from 'path';
 
 /**
- * Записывает данные в кэш-файл
+ * Writes data to the cache file
  *
- * @param path Путь до директории с кэшем
- * @param name Имя кэша (без расширения)
- * @param data Данные для записи в кэш
+ * @param path Path to the directory with cache
+ * @param name Cache name (without extension)
+ * @param data Data to write to cache
  */
 export async function writeCache(path: string, name: string, data: unknown) {
     const fullPath = resolve(path, name + '.json');

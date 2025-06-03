@@ -8,7 +8,6 @@ export { addHarOpenTransform } from './addHarOpenTransform';
 export type { EntryTransformFunction } from './addHarRecorderTransform';
 export { addHarRecorderTransform } from './addHarRecorderTransform';
 export { clearHeaders } from './clearHeaders';
-// getPlaywrightCoreModule is a private module
 export { initDumps } from './initDumps';
 export { replaceBaseUrlInEntry } from './replaceBaseUrlInEntry';
 export { setExtraHash } from './setExtraHash';

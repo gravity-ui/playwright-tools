@@ -4,16 +4,17 @@ import { expect } from '@playwright/test';
 import { globalSettings } from '../data/globalSettings';
 
 /**
- * Доживается скрытия всех элементов, подходящих под локатор
+ * Waits for all elements matching the locator to hide
  *
- * Опционально проверяет, что элемент сначала был видимым (дождаться появления).
- * Если элемент не стал видим по прошествии таймаута (300 мс по-умолчанию),
- * то считается что он успел скрыться до этого, ошибку это не вызывает.
+ * Optionally checks that the element was initially visible (wait for it to appear).
+ * If the element has not become visible after the timeout (300 ms by default),
+ * then it is considered that it managed to hide before that, this does not cause an error.
  *
- * @param locator Локатор элементов, которые должны скрыться
- * @param waitForVisible Включить проверку, что изначально присутствует
- *  (при `true` — с таймаутом по-умолчанию, при числе — с заданным)
+ * @param locator Locator of elements that should hide
+ * @param waitForVisible Enable checking that it is initially present
+ * (if `true` - with the default timeout, if a number - with the specified one)
  */
+
 export async function assertElementsHidden(
     locator: Locator,
     waitForVisible: boolean | number = false,

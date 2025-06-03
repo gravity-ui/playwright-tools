@@ -1,4 +1,3 @@
-// для урла вида https://ya.ru и https://ya.ru/ pathname будет равен '/'
 import { normalizePathname } from './normalizePathname';
 import type { ExpectedResponse } from './types';
 

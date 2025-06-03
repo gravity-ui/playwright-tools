@@ -72,9 +72,9 @@ function initLocalUtilsDispatcherPatch(
 }
 
 /**
- * Позволяет внести модификации на этапе поиска записи в дампе, подходящей под запрос
- * @param transformParams Функция для изменения параметров, на основании которых будет произведён поиск
- * @param transformResult Функция для изменения результата поиска (здесь можно изменить параметры найденного ответа, например его тело)
+ * Allows you to make modifications at the stage of searching for a record in the dump that matches the request
+ * @param transformParams Function for changing the parameters on the basis of which the search will be performed
+ * @param transformResult Function for changing the search result (here you can change the parameters of the found answer, for example its body)
  */
 export function addHarLookupTransform(
     transformParams?: HarLookupParamsTransformFunction,

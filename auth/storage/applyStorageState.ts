@@ -6,11 +6,11 @@ import { restoreCookies } from './restoreCookies';
 import { restoreLocalStorage } from './restoreLocalStorage';
 
 /**
- * Восстанавливает сохранённое браузерное хранилище
+ * Restores saved browser storage
  *
- * @param context Контекст браузера
- * @param storageState Снимок браузерного хранилища
- * @param append Добавить к существующему хранилищу (иначе — сначала чистим)
+ * @param context Browser context
+ * @param storageState Browser Storage Snapshot
+ * @param append Append to existing storage (otherwise - clean first)
  */
 export async function applyStorageState(
     context: BrowserContext,

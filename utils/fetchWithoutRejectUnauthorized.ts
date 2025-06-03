@@ -15,7 +15,7 @@ type GlobalWithUndiciDispatcher = typeof global & {
 let dispatcherWithoutRejectUnauthorized: Dispatcher | undefined;
 
 /**
- * Нативный fetch с отключённой проверкой сертификата
+ * Native fetch with certificate verification disabled
  */
 export const fetchWithoutRejectUnauthorized: typeof fetch = async (input, init) => {
     if (!dispatcherWithoutRejectUnauthorized) {

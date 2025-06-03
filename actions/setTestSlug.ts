@@ -4,11 +4,11 @@ import { testSlugs } from '../data/testSlugs';
 import { extractTestSlug } from '../utils/extractTestSlug';
 
 /**
- * Устанавливает идентификатор (slug) теста
+ * Sets the test slug
  *
  * @param page
- * @param title Название теста, из которого будет извлечён slug
- * @param required Требуется, чтобы в названии был указан slug специальным образом (иначе будет использован сам title)
+ * @param title The name of the test from which the slug will be extracted
+ * @param required Requires the slug to be specified in a specific way in the title (otherwise the title itself will be used)
  */
 export function setTestSlug(page: Page, title: string, required = false) {
     let slug = extractTestSlug(title, !required);

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Хранилище идентификаторов (slug) тестов по странице теста
+ * Storage of test slugs by test page
  */
 export const testSlugs = new WeakMap<Page, string>();

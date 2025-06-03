@@ -1,7 +1,7 @@
 import type { UserData } from '../types/UserData';
 
 /**
- * Проверяет, что объект подходит под ожидаемую структуру объекта с пользователями
+ * Checks that the object matches the expected structure of the object with users
  */
 export function isUsersObject(data: unknown): data is Record<string, UserData> {
     return Boolean(

@@ -9,12 +9,12 @@ import { cacheSettings } from './cacheSettings';
 export type StorageState = Awaited<ReturnType<BrowserContext['storageState']>>;
 
 /**
- * Снимки браузерного хранилища
+ * Browser Storage Snapshots
  */
 const storageStates = new Map<string, StorageState>();
 
 /**
- * Добавляет снимок в хранилище
+ * Adds a snapshot to the repository
  */
 export function setState(key: string, state: StorageState) {
     storageStates.set(key, state);
@@ -25,7 +25,7 @@ export function setState(key: string, state: StorageState) {
 }
 
 /**
- * Возвращает снимок из хранилища
+ * Returns a snapshot from storage
  */
 export async function getState(key: string) {
     if (!storageStates.has(key) && cacheSettings.auth.path) {
@@ -44,14 +44,14 @@ export async function getState(key: string) {
 }
 
 /**
- * Проверяет наличие снимка в хранилище
+ * Checks if a snapshot is in the repository
  */
 export async function hasState(key: string) {
     return Boolean(await getState(key));
 }
 
 /**
- * Удаляет снимок из хранилища
+ * Deletes a snapshot from storage
  */
 export function deleteState(key: string) {
     storageStates.delete(key);

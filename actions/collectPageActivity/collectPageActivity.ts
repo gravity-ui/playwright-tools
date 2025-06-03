@@ -46,11 +46,11 @@ export function collectPageActivity(page: Page, config: Config) {
         const url = response.url();
         let redirect = response.headers()['location'];
 
-        // Если у запроса относительный location,
-        // то подставляем ему origin исходного запроса.
-        // Например, на странице ya.ru запрос https://mc.yandex.ru/watch/123456?...,
-        // у которого location = /watch/654321?...,
-        // будет сравниваться как https://mc.yandex.ru/watch/654321?...
+        // If the request has a relative location,
+        // then we substitute the origin of the original request for it.
+        // For example, on the ya.ru page, the request https://mc.yandex.ru/watch/123456?...,
+        // with location = /watch/654321?...,
+        // will be compared as https://mc.yandex.ru/watch/654321?...
 
         if (redirect) {
             const { origin: redirectOrigin } = new URL(redirect, STUB_HOSTNAME);

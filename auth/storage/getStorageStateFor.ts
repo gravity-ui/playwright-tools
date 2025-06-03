@@ -1,9 +1,9 @@
 import { getState } from '../../data/storageStates';
 
 /**
- * Возвращает снимок браузерного хранилища для заданного ключа
+ * Returns a snapshot of the browser storage for the given key.
  *
- * @param key Ключ, под которых сохранён снимок браузерного хранилища
+ * @param key The key by which the snapshot of the browser storage is saved
  */
 export function getStorageStateFor(key: string) {
     return getState(key);

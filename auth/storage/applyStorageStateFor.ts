@@ -5,11 +5,11 @@ import { getState } from '../../data/storageStates';
 import { applyStorageState } from './applyStorageState';
 
 /**
- * Восстанавливает сохранённое браузерное хранилище по заданному ключу
+ * Restores saved browser storage by the given key
  *
- * @param key Ключ, под которых сохранён снимок браузерного хранилища
- * @param context Контекст браузера
- * @param append Добавить к существующему хранилищу (иначе — сначала чистим)
+ * @param key The key by which the snapshot of the browser storage is saved
+ * @param context Browser context
+ * @param append Add to existing storage (otherwise - clean first)
  */
 export async function applyStorageStateFor(key: string, context: BrowserContext, append = false) {
     const storageState = await getState(key);

@@ -34,61 +34,61 @@ export type ScreenshotOptions = Omit<PageScreenshotOptions, 'type' | 'quality' |
 
 export type MatchScreenshotOptions = {
     /**
-     * Элемент, который нужно скриншотить, или страница
+     * The element or page to be screenshotted
      * @defaultValue `page`
      */
     locator?: Locator | Page;
     /**
-     * Имя скриншота в тесте, можно не задавать для единственного скриншота
+     * The name of the screenshot in the test, it is not necessary to specify it for a single screenshot
      * @defaultValue globalSettings.matchScreenshot.name
      */
     name?: string;
     /**
-     * Параметры создания и сравнения скриншота (параметры вызова `toHaveScreenshot`)
+     * Screenshot creation and comparison parameters (parameters of `toHaveScreenshot` call)
      * @defaultValue globalSettings.matchScreenshot.options
      */
     options?: ScreenshotOptions;
     /**
-     * CSS-селекторы (именно чисто CSS) элементов, которые нужно скрыть
+     * CSS selectors (pure CSS) of elements to hide
      * @defaultValue globalSettings.matchScreenshot.hideBySelector
      */
     hideBySelector?: string[];
     /**
-     * Пауза перед скриншотом (мс)
+     * Pause before screenshot (ms)
      * @defaultValue globalSettings.matchScreenshot.pause
      */
     pause?: number;
     /**
-     * Использовать soft assertion
+     * Use soft assertion
      * @defaultValue globalSettings.matchScreenshot.soft
      */
     soft?: boolean;
     /**
-     * Увести курсор мыши в заданные координаты (чтобы избежать ненужного hover'а в скриншоте)
+     * Move the mouse cursor to the specified coordinates (to avoid unnecessary hover in the screenshot)
      */
     moveMouse?: { x: number; y: number } | [x: number, y: number] | number;
     /**
-     * Нужно ли добавлять slug к имени файла скриншота
+     * Should I add a slug to the screenshot file name?
      * @defaultValue globalSettings.matchScreenshot.shouldPrependSlugToName
      */
     shouldPrependSlugToName?: boolean;
     /**
-     * Темы, для которых необходимо снять скриншот
-     * По-умолчанию скриншоты снимаются для текущей темы. Переключений не происходит
+     * Topics that require a screenshot
+     * By default, screenshots are taken for the current theme. Switching does not occur
      * @defaultValue globalSettings.matchScreenshot.themes
      */
     themes?: Theme[];
     /**
-     * Коллбек перед снятием скриншота. Полезно для каких-либо специальных стабилизирующих действий
-     * @param page Page текущая страница
+     * Callback before taking a screenshot. Useful for any special stabilizing actions
+     * @param page Page current page
      * @defaultValue globalSettings.matchScreenshot.onBeforeScreenshot
      */
     onBeforeScreenshot?: OnBeforeScreenshotCallback;
     /**
-     * Коллбек для переключения темы на страницы перед снятием скриншота
-     * По-умолчанию переключает тему с помощью `page.emulateMedia({ colorScheme: theme });`
-     * @param theme Theme Тема, для которой будет снят скриншот
-     * @param page Page текущая страница
+     * Callback to switch theme to pages before taking screenshot
+     * By default, switches the theme using `page.emulateMedia({ colorScheme: theme });`
+     * @param theme Theme The theme for which the screenshot will be taken
+     * @param page Page current page
      * @defaultValue globalSettings.matchScreenshot.onSwitchTheme
      */
     onSwitchTheme?: OnSwitchThemeCallback;
@@ -100,7 +100,7 @@ const stylesForHide = /* css */ `{
 }`;
 
 /**
- * Выполняет проверку по скриншоту, с префиксом по slug теста в имени
+ * Performs a check on a screenshot, with a prefix of the test slug in the name
  */
 export async function matchScreenshot(
     page: Page,
@@ -123,7 +123,7 @@ export async function matchScreenshot(
         ...options,
     };
 
-    let styleElement: ElementHandle<Node> | undefined;
+    const styleElements: Array<ElementHandle<Node>> = [];
 
     const combinedHideBySelector = [
         ...(globalSettings.matchScreenshot.hideBySelector || []),
@@ -132,10 +132,13 @@ export async function matchScreenshot(
 
     if (combinedHideBySelector.length !== 0) {
         const selector = combinedHideBySelector.join(',');
+        const styles = selector + stylesForHide;
 
-        styleElement = await page.addStyleTag({
-            content: selector + stylesForHide,
-        });
+        styleElements.push(await appendStylesToPage(page, selector + styles));
+    }
+
+    if (options.style) {
+        styleElements.push(await appendStylesToPage(page, options.style));
     }
 
     if (moveMouse) {
@@ -187,7 +190,7 @@ export async function matchScreenshot(
         });
     }
 
-    if (styleElement) {
+    for (const styleElement of styleElements) {
         await styleElement.evaluate((element: Element) => element.remove());
         await styleElement.dispose();
     }
@@ -202,10 +205,14 @@ async function doMatchScreenshot(params: {
     soft: boolean;
 }): Promise<void> {
     const { locator, name, slug, options, shouldPrependSlugToName, soft } = params;
-
     const resolvedName = resolveScreenshotName({ name, slug, shouldPrependSlugToName });
+    const resolvedExpect = soft ? expect.soft : expect;
 
-    await assertScreenshot({ locator, name: resolvedName, options, soft });
+    if (resolvedName) {
+        await resolvedExpect(locator).toHaveScreenshot(resolvedName, options);
+    } else {
+        await resolvedExpect(locator).toHaveScreenshot(options);
+    }
 }
 
 function resolveScreenshotName(params: {
@@ -228,41 +235,6 @@ function resolveScreenshotName(params: {
     return resolvedName;
 }
 
-async function assertScreenshot(params: {
-    locator: Locator | Page;
-    name: Array<string> | undefined;
-    options: ScreenshotOptions;
-    soft: boolean;
-}) {
-    const { locator, name, options, soft } = params;
-
-    const {
-        maxDiffPixelRatio,
-        maxDiffPixels,
-
-        threshold,
-        ...restOptions
-    } = options;
-
-    const resolvedExpect = soft ? expect.soft : expect;
-
-    // it seeems that FullPage is not really supported by toHaveScreenshot
-    if (options.fullPage) {
-        const screenshot = await locator.screenshot(restOptions);
-
-        resolvedExpect(screenshot).toMatchSnapshot({
-            name,
-            maxDiffPixelRatio,
-            maxDiffPixels,
-            threshold,
-        });
-
-        return;
-    }
-
-    if (name) {
-        await resolvedExpect(locator).toHaveScreenshot(name, options);
-    } else {
-        await resolvedExpect(locator).toHaveScreenshot(options);
-    }
+async function appendStylesToPage(page: Page, styles: string) {
+    return await page.addStyleTag({ content: styles });
 }

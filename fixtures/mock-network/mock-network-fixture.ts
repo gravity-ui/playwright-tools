@@ -12,6 +12,7 @@ export function mockNetworkFixtureBuilder({
     zip = true,
     url: urlMatcherBuilder,
     dumpsPath,
+    dumpsFilePath,
 
     ...harPatcherParams
 }: MockNetworkFixtureBuilderParams) {
@@ -36,6 +37,7 @@ export function mockNetworkFixtureBuilder({
 
         await initDumps(page, testInfo, {
             dumpsPath,
+            dumpsFilePath,
             forceUpdateIfHarMissing,
             updateTimeout,
             update,

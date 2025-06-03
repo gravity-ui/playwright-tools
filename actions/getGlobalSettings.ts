@@ -2,7 +2,7 @@ import type { GlobalSettings } from '../data/globalSettings';
 import { globalSettings } from '../data/globalSettings';
 
 /**
- * Возвращает глобальные настройки для команд по заданному разделу (команде)
+ * Returns global settings for commands for a given section (command)
  */
 export function getGlobalSettings<TSection extends keyof GlobalSettings>(
     section: TSection,

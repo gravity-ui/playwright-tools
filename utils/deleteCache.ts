@@ -2,10 +2,10 @@ import { unlink } from 'fs/promises';
 import { resolve } from 'path';
 
 /**
- * Удаляет файл кэша
+ * Remove file from cache
  *
- * @param path Путь до директории с кэшем
- * @param name Имя кэша (без расширения)
+ * @param path cache path
+ * @param name cache name (without extension)
  */
 export function deleteCache(path: string, name: string) {
     const fullPath = resolve(path, name + '.json');

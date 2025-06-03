@@ -6,9 +6,9 @@ export type ClearHeadersOptions = {
 };
 
 /**
- * Чистит указанные заголовки
+ * Cleans the specified headers
  *
- * Удобно использовать в `addHarRecorderTransform` для удаления приватных заголовков и кук.
+ * Convenient to use in `addHarRecorderTransform` to remove private headers and cookies.
  */
 export function clearHeaders(
     headers: Header[],

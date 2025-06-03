@@ -1,6 +1,6 @@
 import type { UserData } from '../types/UserData';
 
 /**
- * Хранилище пользователей для встроенных методов аутентификации
+ * User storage for built-in authentication methods
  */
 export const users: Record<string, UserData> = Object.create(null);

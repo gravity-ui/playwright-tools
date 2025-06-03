@@ -33,7 +33,7 @@ const collectPageActivity: Pick<
 };
 
 /**
- * Глобальные настройки для команд
+ * Global settings for commands
  */
 export const globalSettings = {
     /**
@@ -47,46 +47,46 @@ export const globalSettings = {
      */
     matchScreenshot: {
         /**
-         * Параметры создания и сравнения скриншота.
-         * Будут объединены с переданными при вызове.
+         * Screenshot creation and comparison parameters.
+         * Will be merged with those passed during the call.
          */
         options: {} as ScreenshotOptions,
         /**
-         * CSS-селекторы (именно чисто CSS) элементов, которые нужно скрыть.
-         * Будут объединены с переданными при вызове.
+         * CSS selectors (pure CSS) of elements to hide.
+         * Will be merged with those passed in the call.
          */
         hideBySelector: undefined as string[] | undefined,
         /**
-         * Пауза перед скриншотом (мс)
+         * Pause before screenshot (ms)
          */
         pause: 1000,
         /**
-         * Использовать soft assertion
+         * Use soft assertion
          */
         soft: true,
         /**
-         * Имя скриншота по-умолчанию
+         * Default screenshot name
          */
         name: 'plain' as string | undefined,
         /**
-         * Нужно ли добавлять slug к имени файла скриншота
+         * Should I add a slug to the screenshot file name?
          */
         shouldPrependSlugToName: true,
         /**
-         * Темы, для которых необходимо снять скриншот
-         * По-умолчанию скриншоты снимаются для текущей темы. Переключений не происходит
+         * Topics that require a screenshot
+         * By default, screenshots are taken for the current theme. Switching does not occur
          */
         themes: undefined as Theme[] | undefined,
         /**
-         * Коллбек перед снятием скриншота. Полезно для каких-либо специальных стабилизирующих действий
-         * @param page Page текущая страница
+         * Callback before taking a screenshot. Useful for any special stabilizing actions
+         * @param page Page Current page
          */
         onBeforeScreenshot: undefined as OnBeforeScreenshotCallback | undefined,
         /**
-         * Коллбек для переключения темы на страницы перед снятием скриншота
-         * По-умолчанию переключает тему с помощью `page.emulateMedia({ colorScheme: theme });`
-         * @param theme Theme Тема, для которой будет снят скриншот
-         * @param page Page текущая страница
+         * Callback to switch theme to pages before taking screenshot
+         * By default, switches the theme using `page.emulateMedia({ colorScheme: theme });`
+         * @param theme Theme The theme for which the screenshot will be taken
+         * @param page Page Current page
          */
         onSwitchTheme: (async (theme: Theme, page: Page) => {
             await page.emulateMedia({ colorScheme: theme });
@@ -97,7 +97,7 @@ export const globalSettings = {
      */
     mockDate: {
         /**
-         * Дата по-умолчанию
+         * Default date
          */
         defaultDate: {
             year: 2020,
@@ -113,12 +113,12 @@ export const globalSettings = {
      */
     waitForResolve: {
         /**
-         * Интервал между проверками (мс)
+         * Interval between checks (ms)
          */
         interval: 100,
         /**
-         * Таймаут, после которого проверки прерываются (мс)
-         * `0` — без ограничения
+         * Timeout after which checks are aborted (ms)
+         * `0` — without timeout
          */
         timeout: 5000,
     },
@@ -126,7 +126,7 @@ export const globalSettings = {
     collectPageActivity,
 
     waitForNetworkSettled: {
-        /** Время таймаута после запроса */
+        /** Timeout time after request */
         delay: 0,
     },
 } satisfies Record<string, object>;

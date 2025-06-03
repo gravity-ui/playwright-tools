@@ -2,27 +2,27 @@ import { globalSettings } from '../data/globalSettings';
 
 export type WaitForResolveOptions = {
     /**
-     * Интервал между проверками (мс)
+     * Interval between checks (ms)
      * @defaultValue `100`
      */
     interval?: number;
     /**
-     * Таймаут, после которого проверки прерываются (мс)
-     * `0` — без ограничения
+     * Timeout after which checks are aborted (ms)
+     * `0` — without limitation
      * @defaultValue `5000`
      */
     timeout?: number;
 };
 
 /**
- * Ожидает, когда проверяющая функция вернёт `true`
+ * Waits for the check function to return `true`
  *
- * Проверяющая функция запускается с заданным интервалом и проверяется
- * её значение. Если вернула `true`, то завершает успехом, иначе — ждём дальше.
- * При таймауте или ошибке в проверяющей функции, завершает неудачей.
+ * The checking function is launched at a given interval and its value is checked.
+ * If it returned `true`, then it succeeds, otherwise we wait further.
+ * If there is a timeout or an error in the checking function, it fails.
  *
- * @param solver Проверяющая функция
- * @param options Параметры
+ * @param solver resolving function
+ * @param options Options
  */
 export function waitForResolve(
     solver: () => boolean | PromiseLike<boolean>,

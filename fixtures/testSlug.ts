@@ -23,7 +23,7 @@ const fixtureOptions = {
 };
 
 /**
- * Автоматически выставляет и добавляет в фикстуры теста текущее значение slug для теста
+ * Automatically sets and adds the current slug value for the test to the test fixtures
  */
 export const testSlug: [typeof testSlugValue, typeof fixtureOptions] = [
     testSlugValue,

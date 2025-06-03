@@ -4,11 +4,11 @@ import { resolve } from 'path';
 const checkedPaths = new Set<string>();
 
 /**
- * Возвращает содержимое из файла кэша
+ * Returns the contents of the cache file
  *
- * @param path Путь до директории с кэшем
- * @param name Имя кэша (без расширения)
- * @param ttl Время жизни кэша (мс)
+ * @param path Path to the directory with cache
+ * @param name cache name (without extension)
+ * @param ttl Cache Lifetime (ms)
  */
 export async function readCache<TData = unknown>(path: string, name: string, ttl: number) {
     const fullPath = resolve(path, name + '.json');

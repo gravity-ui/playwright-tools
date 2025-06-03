@@ -3,11 +3,11 @@ import escapeStringRegExp from 'escape-string-regexp';
 import type { Entry, Header } from './types';
 
 /**
- * Подменяет базовый URL в записи запроса HAR-файла
+ * Replaces the base URL in the HAR file request entry
  *
- * @param entry Запись из HAR-файла
- * @param fromUrl URL для замены
- * @param toUrl URL, на который нужно заменить
+ * @param entry ЗRecording from HAR file
+ * @param fromUrl URL to replace
+ * @param toUrl URL to replace with
  */
 export function replaceBaseUrlInEntry(entry: Entry, fromUrl: string, toUrl: string) {
     const fromUrlRegExp = new RegExp(escapeStringRegExp(fromUrl), 'g');

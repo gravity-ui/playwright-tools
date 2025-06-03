@@ -6,7 +6,7 @@ import { removeExtraHttpHeader } from '../actions/removeExtraHttpHeader';
 const HEADER_NAME = 'x-tests-extra-hash';
 
 /**
- * Устанавливает заголовок, который может помочь различать запросы с одинаковыми параметрами
+ * Sets a header that can help differentiate requests with the same parameters.
  */
 export async function setExtraHash(page: Page, value: string | null) {
     const context = page.context();

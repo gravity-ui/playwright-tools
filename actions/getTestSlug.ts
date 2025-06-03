@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 import { testSlugs } from '../data/testSlugs';
 
 /**
- * Возвращает идентификатор (slug) теста
+ * Returns the test slug
  */
 export function getTestSlug(page: Page) {
     if (testSlugs.has(page)) {
