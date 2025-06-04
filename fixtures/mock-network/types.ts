@@ -68,7 +68,7 @@ export type MockNetworkFixtureBuilderParams = {
     headersToRemove?: string[];
 
     /**
-     * Additional set-cookie values ​for which set-cookie headers will be removed
+     * Additional set-cookie values for which set-cookie headers will be removed
      * By default, set-cookies are removed for the following values: with`CSRF-TOKEN`
      */
     setCookieToRemove?: string[];
