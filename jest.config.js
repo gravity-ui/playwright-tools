@@ -9,6 +9,6 @@ module.exports = {
     testMatch: ['**/__tests__/**/?(*.)+(test).[jt]s'],
     testPathIgnorePatterns: ['<rootDir>/example/', '<rootDir>/node_modules/'],
     transform: {
-        '^.+\\.ts$': '@swc/jest',
+        '^.+\\.ts$': ['ts-jest', { isolatedModules: true }],
     },
 };
