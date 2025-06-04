@@ -1,5 +1,5 @@
 name: "\U0001F680 New feature proposal"
-description: Propose a new feature to be added to Gravity UI UIKit
+description: Propose a new feature to be added to playwright-tools
 labels: ["needs: triage"]
 type: Feature
 body:
@@ -37,5 +37,5 @@ body:
       label: Validations
       description: Before submitting the issue, please make sure you do the following
       options:
-        - label: Check that there isn't [already an issue](https://github.com/gravity-ui/uikit/issues) that request the same feature to avoid creating a duplicate.
+        - label: Check that there isn't [already an issue](https://github.com/gravity-ui/playwright-tools/issues) that request the same feature to avoid creating a duplicate.
           required: true
