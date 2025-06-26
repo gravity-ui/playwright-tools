@@ -1,0 +1,68 @@
+{
+  "name": "playwright-tools",
+  "version": "1.12.0",
+  "description": "Tools for Playwright Test",
+  "keywords": [
+    "playwright",
+    "e2e",
+    "test",
+    "tests",
+    "integration"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gravity-ui/playwright-tools"
+  },
+  "license": "MIT",
+  "author": "@Avol-V",
+  "files": [
+    "/actions/**/*.*(js|d.ts)",
+    "/auth/**/*.*(js|d.ts)",
+    "/clement/**/*.*(js|d.ts)",
+    "/config/**/*.*(js|d.ts)",
+    "/data/**/*.*(js|d.ts)",
+    "/deprecate/**/*.*(js|d.ts)",
+    "/fixtures/**/*.*(js|d.ts)",
+    "/har/**/*.*(js|d.ts)",
+    "/types/**/*.*(js|d.ts)",
+    "/utils/**/*.*(js|d.ts)",
+    "!/**/__tests__"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "find actions auth clement config data deprecate example fixtures har types utils -type f ! -name '.eslintrc.js' \\( -name '*.js' -o -name '*.d.ts' \\) -delete",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --ext .ts ./",
+    "test": "jest --colors --config=jest.config.js",
+    "prepublishOnly": "npm run clean && npm run lint && npm run build"
+  },
+  "dependencies": {
+    "escape-string-regexp": "^4.0.0",
+    "minimatch": "^10.0.1",
+    "otplib": "^12.0.1",
+    "timekeeper": "^2.3.1"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@gravity-ui/eslint-config": "^3.3.0",
+    "@gravity-ui/prettier-config": "^1.1.0",
+    "@jest/globals": "^29.7.0",
+    "@playwright/test": "^1.49.0",
+    "@swc/core": "^1.11.5",
+    "@swc/jest": "^0.2.37",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.17.9",
+    "eslint": "^8.57.1",
+    "jest": "^29.7.0",
+    "prettier": "^3.4.2",
+    "ts-jest": "^29.3.1",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "@playwright/test": "^1.22"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

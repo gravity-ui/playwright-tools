@@ -1,0 +1,9 @@
+export { applyStorageState } from './applyStorageState';
+export { applyStorageStateFor } from './applyStorageStateFor';
+export { deleteStorageStateFor } from './deleteStorageStateFor';
+export { getStorageState } from './getStorageState';
+export { getStorageStateFor } from './getStorageStateFor';
+export { hasStorageStateFor } from './hasStorageStateFor';
+export { restoreCookies } from './restoreCookies';
+export { restoreLocalStorage } from './restoreLocalStorage';
+export { saveStorageStateFor } from './saveStorageStateFor';
