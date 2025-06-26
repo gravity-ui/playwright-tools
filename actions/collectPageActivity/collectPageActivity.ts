@@ -48,9 +48,9 @@ export function collectPageActivity(page: Page, config: Config) {
 
         // If the request has a relative location,
         // then we substitute the origin of the original request for it.
-        // For example, on the ya.ru page, the request https://mc.yandex.ru/watch/123456?...,
+        // For example, on the example.com page, the request https:/example.com/watch/123456?...,
         // with location = /watch/654321?...,
-        // will be compared as https://mc.yandex.ru/watch/654321?...
+        // will be compared as https://example.com/watch/654321?...
 
         if (redirect) {
             const { origin: redirectOrigin } = new URL(redirect, STUB_HOSTNAME);

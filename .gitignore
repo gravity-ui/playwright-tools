@@ -1,3 +1,7 @@
+!.eslintrc.js
+!./jest.config.js
+!./jest/unhandled-rejection-handler.js
+
 # Logs
 logs
 *.log

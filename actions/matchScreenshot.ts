@@ -134,7 +134,7 @@ export async function matchScreenshot(
         const selector = combinedHideBySelector.join(',');
         const styles = selector + stylesForHide;
 
-        styleElements.push(await appendStylesToPage(page, selector + styles));
+        styleElements.push(await appendStylesToPage(page, styles));
     }
 
     if (options.style) {

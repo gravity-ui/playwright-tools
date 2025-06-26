@@ -2,8 +2,8 @@ import type { Json } from '../../types';
 
 import { compare } from './compare';
 import { printJsonDiff } from './print-json-diff';
-import type { DiffContextItem, DiffLog, PathAnnotation } from './types';
-import { DiffType, PathAnnotationType } from './types';
+import type { DiffContextItem, DiffLog, PathAnnotation } from './constants';
+import { DiffType, PathAnnotationType } from './constants';
 
 interface DiffPrinterParams {
     left: Json;
