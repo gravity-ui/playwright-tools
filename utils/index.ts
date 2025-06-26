@@ -2,7 +2,6 @@ export { deleteCache } from './deleteCache';
 export { extractTestSlug } from './extractTestSlug';
 export { fetchWithoutRejectUnauthorized } from './fetchWithoutRejectUnauthorized';
 export { getCookieDomain } from './getCookieDomain';
-export { isUsersObject } from './isUsersObject';
 export { NeverError } from './NeverError';
 export { readCache } from './readCache';
 export { waitForResolve } from './waitForResolve';

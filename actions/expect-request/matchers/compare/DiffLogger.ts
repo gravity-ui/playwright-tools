@@ -1,4 +1,4 @@
-import type { DiffContextItem, DiffItemBase, DiffLog } from './constants';
+import type { DiffContextItem, DiffItemBase, DiffLog } from './types';
 
 export class DiffLogger {
     private context: DiffContextItem[] = [];

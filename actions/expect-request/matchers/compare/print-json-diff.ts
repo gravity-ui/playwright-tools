@@ -2,14 +2,14 @@
 import type { Json, JsonArray, JsonObject, JsonPrimitive } from '../../types';
 import { isObject } from '../utils';
 
-import type { DecoratedLine, PathAnnotation } from './constants';
+import { DecoratedLineType } from './constants';
+import type { DecoratedLine, PathAnnotation } from './types';
 import {
-    DecoratedLineType,
     isArrayMissingValueAnnotation,
     isObjectExtraPropertyAnnotation,
     isObjectMissingPropertyAnnotation,
     isValueMismatchAnnotation,
-} from './constants';
+} from './utils';
 
 export function printJsonDiff(params: {
     json: Json;

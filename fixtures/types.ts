@@ -7,5 +7,4 @@ import type {
 
 export type AllPlaywrightTestFixtures = PlaywrightTestArgs & PlaywrightTestOptions;
 export type AllPlaywrightWorkerFixtures = PlaywrightWorkerArgs & PlaywrightWorkerOptions;
-
 export type PlaywrightTestArgsBase = AllPlaywrightTestFixtures & AllPlaywrightWorkerFixtures;
