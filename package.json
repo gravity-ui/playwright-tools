@@ -1,6 +1,6 @@
 {
   "name": "@gravity-ui/playwright-tools",
-  "version": "0.4.0",
+  "version": "0.3.0",
   "description": "Tools for Playwright Test",
   "keywords": [
     "playwright",
@@ -36,7 +36,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "clean": "find actions auth clement config data deprecate example fixtures har types utils -type f ! -name '.eslintrc.js' \\( -name '*.js' -o -name '*.d.ts' \\) -delete",
+    "clean": "find actions auth config data fixtures har utils -type f ! -name '.eslintrc.js' \\( -name '*.js' -o -name '*.d.ts' \\) -delete",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --ext .ts ./",
     "test": "jest --colors --config=jest.config.js",
