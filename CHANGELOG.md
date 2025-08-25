@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/gravity-ui/playwright-tools/compare/v0.4.0...v0.4.1) (2025-08-25)
+
+
+### Bug Fixes
+
+* **app:** fix clean script in package.json ([#11](https://github.com/gravity-ui/playwright-tools/issues/11)) ([e5d8d97](https://github.com/gravity-ui/playwright-tools/commit/e5d8d97c7047cfffd5101d12d076225a370dda96))
+
 ## [0.4.0](https://github.com/gravity-ui/playwright-tools/compare/v0.3.0...v0.4.0) (2025-08-25)
 
 
