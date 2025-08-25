@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
+    "module": "NodeNext",
     "isolatedModules": true,
 
     "strict": true,
@@ -11,8 +11,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "types": ["node"],
     "esModuleInterop": true,
     "resolveJsonModule": true,
