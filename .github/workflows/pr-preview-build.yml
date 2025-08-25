@@ -2,3 +2,11 @@ name: PR Preview Build
 
 on:
   pull_request:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: "PR Preview Build"
+        run: echo PR Preview Build
