@@ -1,0 +1,4 @@
+name: PR Preview Build
+
+on:
+  pull_request:
