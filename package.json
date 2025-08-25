@@ -18,26 +18,20 @@
   "files": [
     "/actions/**/*.*(js|d.ts)",
     "/auth/**/*.*(js|d.ts)",
-    "/clement/**/*.*(js|d.ts)",
     "/config/**/*.*(js|d.ts)",
     "/data/**/*.*(js|d.ts)",
-    "/deprecate/**/*.*(js|d.ts)",
     "/fixtures/**/*.*(js|d.ts)",
     "/har/**/*.*(js|d.ts)",
-    "/types/**/*.*(js|d.ts)",
     "/utils/**/*.*(js|d.ts)",
     "!/**/__tests__"
   ],
   "exports": [
     "./actions/**/*.*(js|d.ts)",
     "./auth/**/*.*(js|d.ts)",
-    "./clement/**/*.*(js|d.ts)",
     "./config/**/*.*(js|d.ts)",
     "./data/**/*.*(js|d.ts)",
-    "./deprecate/**/*.*(js|d.ts)",
     "./fixtures/**/*.*(js|d.ts)",
     "./har/**/*.*(js|d.ts)",
-    "./types/**/*.*(js|d.ts)",
     "./utils/**/*.*(js|d.ts)"
   ],
   "scripts": {

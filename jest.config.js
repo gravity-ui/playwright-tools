@@ -7,7 +7,7 @@ module.exports = {
     moduleFileExtensions: ['js', 'ts'],
     testEnvironment: 'node',
     testMatch: ['**/__tests__/**/?(*.)+(test).[jt]s'],
-    testPathIgnorePatterns: ['<rootDir>/example/', '<rootDir>/node_modules/'],
+    testPathIgnorePatterns: ['<rootDir>/node_modules/'],
     transform: {
         '^.+\\.ts$': ['ts-jest', { isolatedModules: true }],
     },
