@@ -9,8 +9,6 @@ export type Theme = 'light' | 'dark';
 
 export type OnSwitchThemeCallback = (theme: Theme, page: Page) => Promise<void>;
 
-export type OnBeforeScreenshotCallback = (page: Page) => Promise<void>;
-
 export type ScreenshotOptions = Omit<PageScreenshotOptions, 'type' | 'quality' | 'path'> & {
     /**
      * An acceptable ratio of pixels that are different to the total amount of pixels, between `0` and `1`. Default is
@@ -31,6 +29,8 @@ export type ScreenshotOptions = Omit<PageScreenshotOptions, 'type' | 'quality' |
      */
     threshold?: number;
 };
+
+export type OnBeforeScreenshotCallback = (page: Page, options: ScreenshotOptions) => Promise<void>;
 
 export type MatchScreenshotOptions = {
     /**
@@ -158,7 +158,7 @@ export async function matchScreenshot(
         await page.mouse.move(x, y);
     }
 
-    await onBeforeScreenshot?.(page);
+    await onBeforeScreenshot?.(page, combinedOptions);
 
     const slug = getTestSlug(page);
 
