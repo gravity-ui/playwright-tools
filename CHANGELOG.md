@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/gravity-ui/playwright-tools/compare/v0.4.1...v0.5.0) (2025-08-26)
+
+
+### Features
+
+* **matchScreenshot:** sync from pw-utils ([#14](https://github.com/gravity-ui/playwright-tools/issues/14)) ([e19aeea](https://github.com/gravity-ui/playwright-tools/commit/e19aeea84ebdb549f8e34856d86efdb415d6a1ca))
+
 ## [0.4.1](https://github.com/gravity-ui/playwright-tools/compare/v0.4.0...v0.4.1) (2025-08-25)
 
 
