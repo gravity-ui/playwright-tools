@@ -9,8 +9,6 @@ export type Theme = 'light' | 'dark';
 
 export type OnSwitchThemeCallback = (theme: Theme, page: Page) => Promise<void>;
 
-export type OnBeforeScreenshotCallback = (page: Page) => Promise<void>;
-
 export type ScreenshotOptions = Omit<PageScreenshotOptions, 'type' | 'quality' | 'path'> & {
     /**
      * An acceptable ratio of pixels that are different to the total amount of pixels, between `0` and `1`. Default is
@@ -32,63 +30,65 @@ export type ScreenshotOptions = Omit<PageScreenshotOptions, 'type' | 'quality' |
     threshold?: number;
 };
 
+export type OnBeforeScreenshotCallback = (page: Page, options: ScreenshotOptions) => Promise<void>;
+
 export type MatchScreenshotOptions = {
     /**
-     * The element or page to be screenshotted
+     * Элемент, который нужно скриншотить, или страница
      * @defaultValue `page`
      */
     locator?: Locator | Page;
     /**
-     * The name of the screenshot in the test, it is not necessary to specify it for a single screenshot
+     * Имя скриншота в тесте, можно не задавать для единственного скриншота
      * @defaultValue globalSettings.matchScreenshot.name
      */
     name?: string;
     /**
-     * Screenshot creation and comparison parameters (parameters of `toHaveScreenshot` call)
+     * Параметры создания и сравнения скриншота (параметры вызова `toHaveScreenshot`)
      * @defaultValue globalSettings.matchScreenshot.options
      */
     options?: ScreenshotOptions;
     /**
-     * CSS selectors (pure CSS) of elements to hide
+     * CSS-селекторы (именно чисто CSS) элементов, которые нужно скрыть
      * @defaultValue globalSettings.matchScreenshot.hideBySelector
      */
     hideBySelector?: string[];
     /**
-     * Pause before screenshot (ms)
+     * Пауза перед скриншотом (мс)
      * @defaultValue globalSettings.matchScreenshot.pause
      */
     pause?: number;
     /**
-     * Use soft assertion
+     * Использовать soft assertion
      * @defaultValue globalSettings.matchScreenshot.soft
      */
     soft?: boolean;
     /**
-     * Move the mouse cursor to the specified coordinates (to avoid unnecessary hover in the screenshot)
+     * Увести курсор мыши в заданные координаты (чтобы избежать ненужного hover'а в скриншоте)
      */
     moveMouse?: { x: number; y: number } | [x: number, y: number] | number;
     /**
-     * Should I add a slug to the screenshot file name?
+     * Нужно ли добавлять slug к имени файла скриншота
      * @defaultValue globalSettings.matchScreenshot.shouldPrependSlugToName
      */
     shouldPrependSlugToName?: boolean;
     /**
-     * Topics that require a screenshot
-     * By default, screenshots are taken for the current theme. Switching does not occur
+     * Темы, для которых необходимо снять скриншот
+     * По-умолчанию скриншоты снимаются для текущей темы. Переключений не происходит
      * @defaultValue globalSettings.matchScreenshot.themes
      */
     themes?: Theme[];
     /**
-     * Callback before taking a screenshot. Useful for any special stabilizing actions
-     * @param page Page current page
+     * Коллбек перед снятием скриншота. Полезно для каких-либо специальных стабилизирующих действий
+     * @param page Page текущая страница
      * @defaultValue globalSettings.matchScreenshot.onBeforeScreenshot
      */
     onBeforeScreenshot?: OnBeforeScreenshotCallback;
     /**
-     * Callback to switch theme to pages before taking screenshot
-     * By default, switches the theme using `page.emulateMedia({ colorScheme: theme });`
-     * @param theme Theme The theme for which the screenshot will be taken
-     * @param page Page current page
+     * Коллбек для переключения темы на страницы перед снятием скриншота
+     * По-умолчанию переключает тему с помощью `page.emulateMedia({ colorScheme: theme });`
+     * @param theme Theme Тема, для которой будет снят скриншот
+     * @param page Page текущая страница
      * @defaultValue globalSettings.matchScreenshot.onSwitchTheme
      */
     onSwitchTheme?: OnSwitchThemeCallback;
@@ -100,7 +100,7 @@ const stylesForHide = /* css */ `{
 }`;
 
 /**
- * Performs a check on a screenshot, with a prefix of the test slug in the name
+ * Выполняет проверку по скриншоту, с префиксом по slug теста в имени
  */
 export async function matchScreenshot(
     page: Page,
@@ -158,7 +158,7 @@ export async function matchScreenshot(
         await page.mouse.move(x, y);
     }
 
-    await onBeforeScreenshot?.(page);
+    await onBeforeScreenshot?.(page, combinedOptions);
 
     const slug = getTestSlug(page);
 
