@@ -2,6 +2,9 @@
 !./jest.config.js
 !./jest/unhandled-rejection-handler.js
 
+#vscode
+.vscode
+
 # Logs
 logs
 *.log
