@@ -10,7 +10,6 @@ export { getGlobalSettings } from './getGlobalSettings';
 export { getTestSlug } from './getTestSlug';
 export { hasExtraHttpHeader } from './hasExtraHttpHeader';
 export { matchScreenshot } from './matchScreenshot';
-export { mockDate } from './mockDate';
 export { removeExtraHttpHeader } from './removeExtraHttpHeader';
 export { setCacheSettings } from './setCacheSettings';
 export { setGlobalSettings } from './setGlobalSettings';
