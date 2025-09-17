@@ -1,6 +1,6 @@
 {
   "name": "@gravity-ui/playwright-tools",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Tools for Playwright Test",
   "keywords": [
     "playwright",
