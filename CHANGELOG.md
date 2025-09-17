@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/gravity-ui/playwright-tools/compare/v0.5.0...v0.6.0) (2025-09-17)
+
+
+### Features
+
+* added createSmokeScenarios utility for bulding smoke scenarios for storybook based tests ([2b65449](https://github.com/gravity-ui/playwright-tools/commit/2b654493280ea1155a878f411dcf85ae60b9fe9e))
+* added mount fixture for component tests ([2b65449](https://github.com/gravity-ui/playwright-tools/commit/2b654493280ea1155a878f411dcf85ae60b9fe9e))
+
 ## [0.5.0](https://github.com/gravity-ui/playwright-tools/compare/v0.4.1...v0.5.0) (2025-08-26)
 
 
