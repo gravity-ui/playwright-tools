@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/gravity-ui/playwright-tools/compare/v0.6.0...v0.7.0) (2025-09-17)
+
+
+### Features
+
+* added CODEOWNERS ([#21](https://github.com/gravity-ui/playwright-tools/issues/21)) ([68abf6d](https://github.com/gravity-ui/playwright-tools/commit/68abf6d7d2d2a871727eec43bce250c04914cacb))
+
 ## [0.6.0](https://github.com/gravity-ui/playwright-tools/compare/v0.5.0...v0.6.0) (2025-09-17)
 
 
