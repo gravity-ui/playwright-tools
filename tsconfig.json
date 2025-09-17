@@ -16,9 +16,13 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
 
+    "jsx": "react-jsx",
+
     "forceConsistentCasingInFileNames": true,
 
-    "declaration": true
+    "declaration": true,
+
+    "skipLibCheck": true
   },
   "exclude": ["node_modules"]
 }
