@@ -93,22 +93,6 @@ export const globalSettings = {
         }) as undefined | OnSwitchThemeCallback,
     },
     /**
-     * actions/mockDate
-     */
-    mockDate: {
-        /**
-         * Default date
-         */
-        defaultDate: {
-            year: 2020,
-            month: 7,
-            day: 15,
-            hour: 12,
-            min: 0,
-            sec: 0,
-        },
-    },
-    /**
      * utils/waitForResolve
      */
     waitForResolve: {

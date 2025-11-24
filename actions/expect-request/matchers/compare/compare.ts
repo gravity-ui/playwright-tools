@@ -3,7 +3,7 @@ import type { Json, JsonObject } from '../../types';
 import { isObject } from '../utils';
 
 import { DiffLogger } from './DiffLogger';
-import { DiffType } from './constants';
+import { DiffType } from './types';
 
 export function compare(params: { left: Json; right: Json; exactArrays?: boolean }) {
     const { left, right, exactArrays } = params;

@@ -1,4 +1,6 @@
 import {
+    type Entry,
+    addFlushTransform,
     addHarLookupTransform,
     addHarOpenTransform,
     addHarRecorderTransform,
@@ -77,4 +79,7 @@ export function harPatcher({
     });
 
     addHarLookupTransform(onTransformHarLookupParams, onTransformHarLookupResult);
+
+    // Filter out canceled requests before writing to har file
+    addFlushTransform((entries) => entries.filter((entry: Entry) => entry.time !== -1));
 }
