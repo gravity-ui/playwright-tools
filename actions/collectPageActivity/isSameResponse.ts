@@ -1,4 +1,3 @@
-// For URLs like https://example.com and https://example.com/ pathname will be equal to '/'
 import { normalizePathname } from './normalizePathname';
 import type { ExpectedResponse } from './types';
 

@@ -1,11 +1,17 @@
 import type { Json, JsonPrimitive } from '../../types';
 
-export const DiffType = {
-    ValueMismatch: 'value-mismatch',
-    ObjectMissingProperty: 'object-missing-property',
-    ArrayMissingValue: 'array-missing-value',
-} as const;
-export type DiffType = (typeof DiffType)[keyof typeof DiffType];
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- constants are used in typeof expressions
+import {
+    DecoratedLineType as DecoratedLineTypeConst,
+    DiffType as DiffTypeConst,
+    PathAnnotationType as PathAnnotationTypeConst,
+} from './constants';
+
+export type DiffType = (typeof DiffTypeConst)[keyof typeof DiffTypeConst];
+export type DecoratedLineType =
+    (typeof DecoratedLineTypeConst)[keyof typeof DecoratedLineTypeConst];
+export type PathAnnotationType =
+    (typeof PathAnnotationTypeConst)[keyof typeof PathAnnotationTypeConst];
 
 export type DiffLog = DiffItem[];
 
@@ -14,16 +20,16 @@ export type DiffItemBase = {
     side?: 'left' | 'right';
 } & (
     | {
-          type: typeof DiffType.ValueMismatch;
+          type: typeof DiffTypeConst.ValueMismatch;
           expected?: Json;
           received?: Json;
       }
     | {
-          type: typeof DiffType.ObjectMissingProperty;
+          type: typeof DiffTypeConst.ObjectMissingProperty;
           expected: { key: string; value: Json };
       }
     | {
-          type: typeof DiffType.ArrayMissingValue;
+          type: typeof DiffTypeConst.ArrayMissingValue;
           expected: Json;
       }
 );
@@ -33,28 +39,17 @@ export type DiffContextItem = {
     arrayIndex?: number;
 };
 
-export const DecoratedLineType = {
-    ObjectOpen: 'object-open',
-    ObjectClose: 'object-close',
-    ArrayOpen: 'array-open',
-    ArrayClose: 'array-close',
-    PrimitiveValue: 'primitive-value',
-    EmptyObject: 'empty-object',
-    EmptyArray: 'empty-array',
-} as const;
-export type DecoratedLineType = (typeof DecoratedLineType)[keyof typeof DecoratedLineType];
-
 export type DecoratedLine = {
     fieldName?: string;
     level: number;
     diffMarker?: 'expected' | 'received';
 } & (
     | {
-          type: typeof DecoratedLineType.PrimitiveValue;
+          type: typeof DecoratedLineTypeConst.PrimitiveValue;
           value: JsonPrimitive;
       }
     | {
-          type: Exclude<DecoratedLineType, typeof DecoratedLineType.PrimitiveValue>;
+          type: Exclude<DecoratedLineType, typeof DecoratedLineTypeConst.PrimitiveValue>;
       }
 );
 
@@ -64,51 +59,19 @@ export type PathAnnotation =
     | ArrayMissingValueAnnotation
     | ValueMismatchAnnotation;
 
-export const PathAnnotationType = {
-    ValueMismatch: 'value-mismatch',
-    ObjectMissingProperty: 'object-missing-property',
-    ObjectExtraProperty: 'object-extra-property',
-    ArrayMissingValue: 'array-missing-value',
-} as const;
-export type PathAnnotationType = (typeof PathAnnotationType)[keyof typeof PathAnnotationType];
-
-type ObjectMissingPropertyAnnotation = {
-    type: typeof PathAnnotationType.ObjectMissingProperty;
+export type ObjectMissingPropertyAnnotation = {
+    type: typeof PathAnnotationTypeConst.ObjectMissingProperty;
     expected: { key: string; value: Json };
 };
-type ObjectExtraPropertyAnnotation = {
-    type: typeof PathAnnotationType.ObjectExtraProperty;
+export type ObjectExtraPropertyAnnotation = {
+    type: typeof PathAnnotationTypeConst.ObjectExtraProperty;
 };
-type ArrayMissingValueAnnotation = {
-    type: typeof PathAnnotationType.ArrayMissingValue;
+export type ArrayMissingValueAnnotation = {
+    type: typeof PathAnnotationTypeConst.ArrayMissingValue;
     expected: Json;
 };
-type ValueMismatchAnnotation = {
-    type: typeof PathAnnotationType.ValueMismatch;
+export type ValueMismatchAnnotation = {
+    type: typeof PathAnnotationTypeConst.ValueMismatch;
     expected?: Json;
     received?: Json;
 };
-
-export function isValueMismatchAnnotation(
-    annotation: PathAnnotation,
-): annotation is ValueMismatchAnnotation {
-    return annotation.type === PathAnnotationType.ValueMismatch;
-}
-
-export function isObjectMissingPropertyAnnotation(
-    annotation: PathAnnotation,
-): annotation is ObjectMissingPropertyAnnotation {
-    return annotation.type === PathAnnotationType.ObjectMissingProperty;
-}
-
-export function isObjectExtraPropertyAnnotation(
-    annotation: PathAnnotation,
-): annotation is ArrayMissingValueAnnotation {
-    return annotation.type === PathAnnotationType.ObjectExtraProperty;
-}
-
-export function isArrayMissingValueAnnotation(
-    annotation: PathAnnotation,
-): annotation is ArrayMissingValueAnnotation {
-    return annotation.type === PathAnnotationType.ArrayMissingValue;
-}
