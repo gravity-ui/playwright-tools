@@ -22,18 +22,42 @@
     "/data/**/*.*(js|d.ts)",
     "/fixtures/**/*.*(js|d.ts)",
     "/har/**/*.*(js|d.ts)",
+    "/storybook/**/*.*(js|d.ts)",
     "/utils/**/*.*(js|d.ts)",
     "!/**/__tests__"
   ],
-  "exports": [
-    "./actions/**/*.*(js|d.ts)",
-    "./auth/**/*.*(js|d.ts)",
-    "./config/**/*.*(js|d.ts)",
-    "./data/**/*.*(js|d.ts)",
-    "./fixtures/**/*.*(js|d.ts)",
-    "./har/**/*.*(js|d.ts)",
-    "./utils/**/*.*(js|d.ts)"
-  ],
+  "exports": {
+    "./actions": {
+      "types": "./actions/index.d.ts",
+      "import": "./actions/index.js",
+      "require": "./actions/index.js"
+    },
+    "./auth/storage": {
+      "types": "./auth/storage/index.d.ts",
+      "import": "./auth/storage/index.js",
+      "require": "./auth/storage/index.js"
+    },
+    "./fixtures": {
+      "types": "./fixtures/index.d.ts",
+      "import": "./fixtures/index.js",
+      "require": "./fixtures/index.js"
+    },
+    "./har": {
+      "types": "./har/index.d.ts",
+      "import": "./har/index.js",
+      "require": "./har/index.js"
+    },
+    "./storybook": {
+      "types": "./storybook/index.d.ts",
+      "import": "./storybook/index.js",
+      "require": "./storybook/index.js"
+    },
+    "./utils": {
+      "types": "./utils/index.d.ts",
+      "import": "./utils/index.js",
+      "require": "./utils/index.js"
+    }
+  },
   "scripts": {
     "prepare": "husky",
     "build": "tsc",

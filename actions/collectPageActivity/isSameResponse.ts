@@ -1,3 +1,4 @@
+import { getURL } from './getURL';
 import { normalizePathname } from './normalizePathname';
 import type { ExpectedResponse } from './types';
 
@@ -7,13 +8,14 @@ export function isSameResponse(status: number, url: string, baseUrl: string) {
     return (expectedResponse: ExpectedResponse) => {
         const expectedUrl =
             typeof expectedResponse.url === 'string'
-                ? new URL(expectedResponse.url, baseUrl)
+                ? getURL(expectedResponse.url, baseUrl)
                 : expectedResponse.url;
-        const failedUrl = new URL(url);
 
         let result = expectedResponse.status === status;
 
         if (result) {
+            const failedUrl = getURL(url);
+
             if (expectedUrl instanceof RegExp) {
                 result = expectedUrl.test(failedUrl.href);
             } else {
