@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/gravity-ui/playwright-tools/compare/v0.7.0...v0.8.0) (2025-11-25)
+
+
+### Features
+
+* ported all missing code from playwright-utils to playwright-tools ([#23](https://github.com/gravity-ui/playwright-tools/issues/23)) ([fcf3378](https://github.com/gravity-ui/playwright-tools/commit/fcf3378390ceea86bcd35f56819af8b8dbff3ea7))
+
 ## [0.7.0](https://github.com/gravity-ui/playwright-tools/compare/v0.6.0...v0.7.0) (2025-09-17)
 
 
