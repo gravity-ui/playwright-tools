@@ -12,7 +12,7 @@ export type ExpectedMessage = {
 
 export type ExpectedResponse = {
     status: number;
-    url: string;
+    url: string | RegExp;
 };
 
 export type Config = {

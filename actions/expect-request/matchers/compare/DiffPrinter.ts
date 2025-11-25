@@ -48,7 +48,6 @@ export class DiffPrinter {
                 const path = this.makePathFromContext(context);
 
                 if (!acc[path]) {
-                    /* eslint-disable no-return-assign, no-param-reassign */
                     acc[path] = [];
                 }
 

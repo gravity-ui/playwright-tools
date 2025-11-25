@@ -1,27 +1,35 @@
 import type { Json, JsonPrimitive } from '../../types';
 
-import type { DecoratedLineType, DiffType, PathAnnotationType } from './constants';
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports -- constants are used in typeof expressions
+import {
+    DecoratedLineType as DecoratedLineTypeConst,
+    DiffType as DiffTypeConst,
+    PathAnnotationType as PathAnnotationTypeConst,
+} from './constants';
 
-export type DiffType = (typeof DiffType)[keyof typeof DiffType];
+export type DiffType = (typeof DiffTypeConst)[keyof typeof DiffTypeConst];
+export type DecoratedLineType =
+    (typeof DecoratedLineTypeConst)[keyof typeof DecoratedLineTypeConst];
+export type PathAnnotationType =
+    (typeof PathAnnotationTypeConst)[keyof typeof PathAnnotationTypeConst];
 
 export type DiffLog = DiffItem[];
 
 export type DiffItem = DiffItemBase & { context: DiffContextItem[] };
-
 export type DiffItemBase = {
     side?: 'left' | 'right';
 } & (
     | {
-          type: typeof DiffType.ValueMismatch;
+          type: typeof DiffTypeConst.ValueMismatch;
           expected?: Json;
           received?: Json;
       }
     | {
-          type: typeof DiffType.ObjectMissingProperty;
+          type: typeof DiffTypeConst.ObjectMissingProperty;
           expected: { key: string; value: Json };
       }
     | {
-          type: typeof DiffType.ArrayMissingValue;
+          type: typeof DiffTypeConst.ArrayMissingValue;
           expected: Json;
       }
 );
@@ -31,19 +39,17 @@ export type DiffContextItem = {
     arrayIndex?: number;
 };
 
-export type DecoratedLineType = (typeof DecoratedLineType)[keyof typeof DecoratedLineType];
-
 export type DecoratedLine = {
     fieldName?: string;
     level: number;
     diffMarker?: 'expected' | 'received';
 } & (
     | {
-          type: typeof DecoratedLineType.PrimitiveValue;
+          type: typeof DecoratedLineTypeConst.PrimitiveValue;
           value: JsonPrimitive;
       }
     | {
-          type: Exclude<DecoratedLineType, typeof DecoratedLineType.PrimitiveValue>;
+          type: Exclude<DecoratedLineType, typeof DecoratedLineTypeConst.PrimitiveValue>;
       }
 );
 
@@ -53,24 +59,19 @@ export type PathAnnotation =
     | ArrayMissingValueAnnotation
     | ValueMismatchAnnotation;
 
-export type PathAnnotationType = (typeof PathAnnotationType)[keyof typeof PathAnnotationType];
-
 export type ObjectMissingPropertyAnnotation = {
-    type: typeof PathAnnotationType.ObjectMissingProperty;
+    type: typeof PathAnnotationTypeConst.ObjectMissingProperty;
     expected: { key: string; value: Json };
 };
-
 export type ObjectExtraPropertyAnnotation = {
-    type: typeof PathAnnotationType.ObjectExtraProperty;
+    type: typeof PathAnnotationTypeConst.ObjectExtraProperty;
 };
-
 export type ArrayMissingValueAnnotation = {
-    type: typeof PathAnnotationType.ArrayMissingValue;
+    type: typeof PathAnnotationTypeConst.ArrayMissingValue;
     expected: Json;
 };
-
 export type ValueMismatchAnnotation = {
-    type: typeof PathAnnotationType.ValueMismatch;
+    type: typeof PathAnnotationTypeConst.ValueMismatch;
     expected?: Json;
     received?: Json;
 };

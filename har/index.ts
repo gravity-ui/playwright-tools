@@ -7,6 +7,8 @@ export type { HarTransformFunction } from './addHarOpenTransform';
 export { addHarOpenTransform } from './addHarOpenTransform';
 export type { EntryTransformFunction } from './addHarRecorderTransform';
 export { addHarRecorderTransform } from './addHarRecorderTransform';
+export type { FlushTransformFunction } from './addFlushTransform';
+export { addFlushTransform } from './addFlushTransform';
 export { clearHeaders } from './clearHeaders';
 export { initDumps } from './initDumps';
 export { replaceBaseUrlInEntry } from './replaceBaseUrlInEntry';

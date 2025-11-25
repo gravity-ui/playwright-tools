@@ -4,6 +4,8 @@ export { assertElementsHidden } from './assertElementsHidden';
 export { clearExtraHttpHeaders } from './clearExtraHttpHeaders';
 export { collectPageActivity } from './collectPageActivity';
 export { disableAnimations } from './disableAnimation';
+export { disableMetrika } from './disableMetrika';
+export { expectRequest } from './expect-request';
 export { getExtraHttpHeader } from './getExtraHttpHeader';
 export { getExtraHttpHeaders } from './getExtraHttpHeaders';
 export { getGlobalSettings } from './getGlobalSettings';
