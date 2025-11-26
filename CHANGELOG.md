@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/gravity-ui/playwright-tools/compare/v0.8.0...v0.8.1) (2025-11-26)
+
+
+### Bug Fixes
+
+* fixed exports format for package ([#25](https://github.com/gravity-ui/playwright-tools/issues/25)) ([978c475](https://github.com/gravity-ui/playwright-tools/commit/978c475f5853bc406b3c41d2767077e0dd397c0a))
+
 ## [0.8.0](https://github.com/gravity-ui/playwright-tools/compare/v0.7.0...v0.8.0) (2025-11-25)
 
 
