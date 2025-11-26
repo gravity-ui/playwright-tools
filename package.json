@@ -60,7 +60,7 @@
   "scripts": {
     "prepare": "husky",
     "build": "tsc",
-    "clean": "find actions auth config data fixtures har utils -type f ! -name '.eslintrc.js' \\( -name '*.js' -o -name '*.d.ts' \\) -delete",
+    "clean": "find actions auth data fixtures har utils -type f ! -name '.eslintrc.js' \\( -name '*.js' -o -name '*.d.ts' \\) -delete",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --ext .ts ./",
     "test": "jest --colors --config=jest.config.js",
