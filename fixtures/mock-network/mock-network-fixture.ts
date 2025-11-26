@@ -11,7 +11,6 @@ export function mockNetworkFixtureBuilder({
     updateTimeout,
     zip = true,
     url: urlMatcherBuilder,
-    dumpsPath,
     dumpsFilePath,
 
     ...harPatcherParams
@@ -36,7 +35,6 @@ export function mockNetworkFixtureBuilder({
         const url = urlMatcherBuilder(baseURL);
 
         await initDumps(page, testInfo, {
-            dumpsPath,
             dumpsFilePath,
             forceUpdateIfHarMissing,
             updateTimeout,
