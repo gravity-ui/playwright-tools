@@ -18,7 +18,6 @@
   "files": [
     "/actions/**/*.*(js|d.ts)",
     "/auth/**/*.*(js|d.ts)",
-    "/config/**/*.*(js|d.ts)",
     "/data/**/*.*(js|d.ts)",
     "/fixtures/**/*.*(js|d.ts)",
     "/har/**/*.*(js|d.ts)",
