@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/gravity-ui/playwright-tools/compare/v0.8.1...v0.8.2) (2025-11-26)
+
+
+### Bug Fixes
+
+* removed config from files directory of a package ([#27](https://github.com/gravity-ui/playwright-tools/issues/27)) ([83d02fd](https://github.com/gravity-ui/playwright-tools/commit/83d02fd4917902e0a4c8d2d82f5e9e99accde1f8))
+
 ## [0.8.1](https://github.com/gravity-ui/playwright-tools/compare/v0.8.0...v0.8.1) (2025-11-26)
 
 
