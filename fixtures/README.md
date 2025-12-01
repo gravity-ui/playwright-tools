@@ -235,27 +235,14 @@ type MockNetworkFixtureBuilderParams = {
     url: (baseURL: string) => string | RegExp;
 
     /**
-     * Custom path to dumps directory. By default, the path is calculated as
-     * testInfo.snapshotPath('').replace(/-snapshots\/[^/]+$/, '-data/' + slug)
-     * @param testInfo TestInfo information about current test
-     * @param slug test slug
-     *
-     * @returns string path to dumps directory
-     *
-     * @deprecated Use dumpsFilePath.
-     */
-    dumpsPath?: (testInfo: TestInfo, slug: string) => string;
-
-    /**
      * Custom path to dumps file. Overrides the path formed through dumpsPath.
      * @param params Parameters for building the path:
      * @param params.testInfo TestInfo information about current test
-     * @param params.slug test slug
      * @param params.zip Flag for using zip archive for .har
      *
      * @returns string path to dumps file
      */
-    dumpsFilePath?: (params: { testInfo: TestInfo; slug: string; zip: boolean }) => string;
+    dumpsFilePath?: (params: { testInfo: TestInfo; zip: boolean }) => string;
 
     /**
      * Additional headers to be removed before recording request to .har

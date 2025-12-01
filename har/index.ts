@@ -14,3 +14,4 @@ export { initDumps } from './initDumps';
 export { replaceBaseUrlInEntry } from './replaceBaseUrlInEntry';
 export { setExtraHash } from './setExtraHash';
 export type { HARFile, Entry } from './types';
+export { defaultDumpsFilePathBuilder, dumpsPathBuldeWithSlugBuilder } from './dumpsFilePathBulders';
