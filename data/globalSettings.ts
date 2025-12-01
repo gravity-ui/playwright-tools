@@ -115,7 +115,9 @@ export const globalSettings = {
     },
 } satisfies Record<string, object>;
 
-export type GlobalSettings = typeof globalSettings;
+type GlobalSettingsType = typeof globalSettings;
+
+export interface GlobalSettings extends GlobalSettingsType {}
 export type PartialGlobalSettings = {
     [Key in keyof GlobalSettings]?: Partial<GlobalSettings[Key]>;
 };
