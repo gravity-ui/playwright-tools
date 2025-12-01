@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/gravity-ui/playwright-tools/compare/v0.8.4...v0.9.0) (2025-12-01)
+
+
+### Features
+
+* initDumps -&gt; removed deprecated dumpsPath ([#31](https://github.com/gravity-ui/playwright-tools/issues/31)) ([acea120](https://github.com/gravity-ui/playwright-tools/commit/acea120f1ba5447164463322f98e77a7e11fd760))
+
 ## [0.8.4](https://github.com/gravity-ui/playwright-tools/compare/v0.8.3...v0.8.4) (2025-12-01)
 
 
