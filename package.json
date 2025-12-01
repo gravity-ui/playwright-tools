@@ -36,6 +36,11 @@
       "import": "./auth/storage/index.js",
       "require": "./auth/storage/index.js"
     },
+    "./data": {
+      "types": "./data/index.d.ts",
+      "import": "./data/index.js",
+      "require": "./data/index.js"
+    },
     "./fixtures": {
       "types": "./fixtures/index.d.ts",
       "import": "./fixtures/index.js",
@@ -60,7 +65,7 @@
   "scripts": {
     "prepare": "husky",
     "build": "tsc",
-    "clean": "find actions auth data fixtures har utils -type f ! -name '.eslintrc.js' \\( -name '*.js' -o -name '*.d.ts' \\) -delete",
+    "clean": "find actions auth data fixtures har storybook utils -type f ! -name '.eslintrc.js' \\( -name '*.js' -o -name '*.d.ts' \\) -delete",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --ext .ts ./",
     "test": "jest --colors --config=jest.config.js",
