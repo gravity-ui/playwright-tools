@@ -3,6 +3,8 @@ import { relative, resolve } from 'node:path';
 
 import type { Page, TestInfo } from '@playwright/test';
 
+import { defaultDumpsFilePathBuilder } from './dumpsFilePathBulders';
+
 export type InitDumpsOptions = {
     /**
      * Path to the root directory of the project, relative to which the calculation will be made
@@ -103,16 +105,4 @@ export async function initDumps(
         notFound,
         url,
     });
-}
-
-function defaultDumpsFilePathBuilder({ testInfo, zip }: { testInfo: TestInfo; zip: boolean }) {
-    const filePath = testInfo.snapshotPath(
-        testInfo.titlePath
-            .slice(1)
-            .join('-')
-            .replace(/ /g, '-')
-            .replace(/[^a-zA-Z0-9\-_]/g, ''), // Removing characters which are not supported as filename
-    );
-
-    return zip ? `${filePath}.zip` : `${filePath}.har`;
 }
