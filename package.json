@@ -18,10 +18,10 @@
   "files": [
     "/actions/**/*.*(js|d.ts)",
     "/auth/**/*.*(js|d.ts)",
+    "/component-tests/**/*.*(js|d.ts)",
     "/data/**/*.*(js|d.ts)",
     "/fixtures/**/*.*(js|d.ts)",
     "/har/**/*.*(js|d.ts)",
-    "/storybook/**/*.*(js|d.ts)",
     "/utils/**/*.*(js|d.ts)",
     "!/**/__tests__"
   ],
@@ -35,6 +35,11 @@
       "types": "./auth/storage/index.d.ts",
       "import": "./auth/storage/index.js",
       "require": "./auth/storage/index.js"
+    },
+    "./component-tests": {
+      "types": "./component-tests/index.d.ts",
+      "import": "./component-tests/index.js",
+      "require": "./component-tests/index.js"
     },
     "./data": {
       "types": "./data/index.d.ts",
@@ -51,11 +56,6 @@
       "import": "./har/index.js",
       "require": "./har/index.js"
     },
-    "./storybook": {
-      "types": "./storybook/index.d.ts",
-      "import": "./storybook/index.js",
-      "require": "./storybook/index.js"
-    },
     "./utils": {
       "types": "./utils/index.d.ts",
       "import": "./utils/index.js",
@@ -65,7 +65,7 @@
   "scripts": {
     "prepare": "husky",
     "build": "tsc",
-    "clean": "find actions auth data fixtures har storybook utils -type f ! -name '.eslintrc.js' \\( -name '*.js' -o -name '*.d.ts' \\) -delete",
+    "clean": "find actions auth component-tests data fixtures har utils -type f ! -name '.eslintrc.js' \\( -name '*.js' -o -name '*.d.ts' \\) -delete",
     "typecheck": "tsc --noEmit",
     "lint": "eslint --ext .ts ./",
     "test": "jest --colors --config=jest.config.js",

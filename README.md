@@ -14,6 +14,7 @@ import { matchScreenshot } from 'playwright-tools/actions';
 
 - [actions](./actions/README.md) — Browser actions.
 - [auth/storage](./auth/storage/README.md) — Authentication functions for saving and restoring browser storage snapshots.
+- [component-tests](./component-tests/README.md) — Utilities and fixtures for Playwright Component Testing.
 - [fixtures](./fixtures/README.md) — Fixtures for passing values into tests.
 - [har](./har/README.md) — Functions for working with HAR request dumps.
 - [config](./config/README.md) — Base configuration.

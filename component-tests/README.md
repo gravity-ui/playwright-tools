@@ -1,6 +1,6 @@
-# Storybook Testing Utilities
+# Component Testing Utilities
 
-This module provides utilities and fixtures for testing Storybook components with Playwright.
+This module provides utilities and fixtures for Playwright Component Testing.
 
 ## Utils
 
@@ -9,7 +9,7 @@ This module provides utilities and fixtures for testing Storybook components wit
 A utility for generating test scenarios from component props variations. It creates a set of test cases based on a base props object and variations for each prop.
 
 ```ts
-import { createSmokeScenarios } from 'playwright-tools/storybook';
+import { createSmokeScenarios } from 'playwright-tools/component-tests';
 
 const scenarios = createSmokeScenarios(
     // Base props
@@ -77,7 +77,7 @@ Enhanced mount fixture for Playwright Component Testing that wraps React compone
 Extend `test` in Playwright:
 
 ```ts
-import { mountFixture, type MountFn, TEST_WRAPPER_CLASS } from 'playwright-tools/storybook';
+import { mountFixture, type MountFn, TEST_WRAPPER_CLASS } from 'playwright-tools/component-tests';
 
 export type TestExtraFixtures = {
     mount: MountFn;
