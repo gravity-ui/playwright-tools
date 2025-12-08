@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/gravity-ui/playwright-tools/compare/v0.9.1...v0.9.2) (2025-12-08)
+
+
+### Bug Fixes
+
+* removed vegancat from codeowners ([#37](https://github.com/gravity-ui/playwright-tools/issues/37)) ([dda23cc](https://github.com/gravity-ui/playwright-tools/commit/dda23cc7ee309895a8c3957a6f392f6e16749fe2))
+
 ## [0.9.1](https://github.com/gravity-ui/playwright-tools/compare/v0.9.0...v0.9.1) (2025-12-08)
 
 
