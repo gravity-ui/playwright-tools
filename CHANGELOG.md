@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/gravity-ui/playwright-tools/compare/v0.9.0...v0.9.1) (2025-12-08)
+
+
+### Bug Fixes
+
+* added react and react-dom to peer deps ([#35](https://github.com/gravity-ui/playwright-tools/issues/35)) ([0e6bd7c](https://github.com/gravity-ui/playwright-tools/commit/0e6bd7c618707b254e30b2d6c1f29ed8fcb4dd3b))
+
 ## [0.9.0](https://github.com/gravity-ui/playwright-tools/compare/v0.8.4...v0.9.0) (2025-12-01)
 
 
