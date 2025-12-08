@@ -48,7 +48,11 @@ export const createSmokeScenarios = <Props extends {}>(
             });
         } else {
             propCases.forEach((propCase) => {
-                const hasStringifyMethod = (propCase as any)?.toString;
+                const hasStringifyMethod =
+                    propCase !== null &&
+                    propCase !== undefined &&
+                    typeof (propCase as object).toString === 'function';
+
                 if (!hasStringifyMethod) {
                     throw new Error(
                         'The case value does not have a method "toString", use case with name.',
@@ -56,7 +60,7 @@ export const createSmokeScenarios = <Props extends {}>(
                 }
 
                 scenarios.push([
-                    `${scenarioName}[${propName as string}: ${(propCase as any)?.toString()}]`,
+                    `${scenarioName}[${propName as string}: ${String(propCase)}]`,
                     {
                         ...baseProps,
                         [propName]: propCase,

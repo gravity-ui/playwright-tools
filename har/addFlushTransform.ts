@@ -3,12 +3,17 @@ import type { Entry } from './types';
 
 export type FlushTransformFunction = (entries: Entry[]) => Entry[];
 
+interface HarRecorderInstance {
+    _entries: Entry[];
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function wrapHarRecorderMethods(HarRecorder: any, transform: FlushTransformFunction) {
     const originalFlush = HarRecorder.prototype.flush;
 
     if (originalFlush) {
-        HarRecorder.prototype.flush = function flush(this: any) {
+        // eslint-disable-next-line no-param-reassign -- intentional prototype monkey-patching
+        HarRecorder.prototype.flush = function flush(this: HarRecorderInstance) {
             if (transform) {
                 // Transform requests when transform function is present
                 this._entries = transform(this._entries);

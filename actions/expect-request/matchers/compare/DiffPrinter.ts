@@ -46,34 +46,40 @@ export class DiffPrinter {
             (acc, logItem) => {
                 const { context, type } = logItem;
                 const path = this.makePathFromContext(context);
+                const existingAnnotations = acc[path] ?? [];
 
-                if (!acc[path]) {
-                    acc[path] = [];
-                }
+                let newAnnotation: PathAnnotation | undefined;
 
                 if (type === DiffType.ValueMismatch) {
                     if (logItem.expected === undefined && logItem.received !== undefined) {
-                        acc[path].push({ type: PathAnnotationType.ObjectExtraProperty });
+                        newAnnotation = { type: PathAnnotationType.ObjectExtraProperty };
                     } else {
-                        acc[path].push({
+                        newAnnotation = {
                             type: PathAnnotationType.ValueMismatch,
                             expected: logItem.expected,
                             received: logItem.received,
-                        });
+                        };
                     }
                 } else if (type === DiffType.ObjectMissingProperty) {
-                    acc[path].push({
+                    newAnnotation = {
                         type: PathAnnotationType.ObjectMissingProperty,
                         expected: logItem.expected,
-                    });
+                    };
                 } else if (type === DiffType.ArrayMissingValue) {
-                    acc[path].push({
+                    newAnnotation = {
                         type: PathAnnotationType.ArrayMissingValue,
                         expected: logItem.expected,
-                    });
+                    };
                 }
 
-                return acc;
+                if (!newAnnotation) {
+                    return acc;
+                }
+
+                return {
+                    ...acc,
+                    [path]: [...existingAnnotations, newAnnotation],
+                };
             },
             {},
         );

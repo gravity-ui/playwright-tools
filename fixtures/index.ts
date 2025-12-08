@@ -25,6 +25,3 @@ export type {
     GlobalSettingsWorkerArgs,
 } from './global-settings';
 export { globalSettingsFixturesBuilder } from './global-settings';
-
-export type { MountFn, MountTestArgs } from './mount';
-export { mountFixture, TEST_WRAPPER_CLASS } from './mount';
