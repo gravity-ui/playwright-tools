@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/gravity-ui/playwright-tools/compare/v0.9.2...v1.0.0) (2025-12-10)
+
+
+### chore
+
+* release 1.0.0 ([#41](https://github.com/gravity-ui/playwright-tools/issues/41)) ([df1e5b2](https://github.com/gravity-ui/playwright-tools/commit/df1e5b205bcd275ef8aced875f516c2b60652b5f))
+
 ## [0.9.2](https://github.com/gravity-ui/playwright-tools/compare/v0.9.1...v0.9.2) (2025-12-08)
 
 
