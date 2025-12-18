@@ -3,7 +3,7 @@
 A library of additional utilities for writing tests using Playwright Test.
 
 ```
-npm i -D playwright-tools
+npm i -D @gravity-ui/playwright-tools
 ```
 
 The package contains several subdirectories with utilities for different purposes. You should import from these subdirectories, for example:
