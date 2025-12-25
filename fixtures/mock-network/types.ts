@@ -1,4 +1,4 @@
-import type { TestInfo } from '@playwright/test';
+import type { PlaywrightTestArgs, PlaywrightTestOptions, TestInfo } from '@playwright/test';
 
 import type {
     Entry,
@@ -6,7 +6,10 @@ import type {
     HarLookupResultTransformFunction,
 } from '../../har';
 
-export type MockNetworkFixtureBuilderParams = {
+export type MockNetworkFixtureBuilderParams<
+    TestArgs extends PlaywrightTestArgs & PlaywrightTestOptions = PlaywrightTestArgs &
+        PlaywrightTestOptions,
+> = {
     /**
      * Update dumps or not
      * @defaultValue `false`
@@ -64,24 +67,45 @@ export type MockNetworkFixtureBuilderParams = {
      * Callback for processing requests and responses by saving to .har. Useful for various post-processing of requests: cleaning, changing format, etc.
      * By default, sensitive headers are removed + the base url of the request is changed to a stub
      * @param entry The entry in .har that will be written
+     * @param baseURL The base URL of the test
      */
-    onHarEntryWillWrite?: (entry: Entry) => void;
+    onHarEntryWillWrite?: (entry: Entry, baseURL: string) => void;
 
     /**
      * Callback to process requests and responses written in .har before they are used
      * Useful for reverting changes made in onHarEntryWillWrite
      * By default, the base url templates are replaced with the actual baseUrl of the test
      * @param entry The entry in .har that will be used
+     * @param baseURL The base URL of the test
      */
-    onHarEntryWillRead?: (entry: Entry) => void;
+    onHarEntryWillRead?: (entry: Entry, baseURL: string) => void;
 
     /**
      * Callback for changing search parameters of queries in .har
+     * @param params The lookup parameters
+     * @param baseURL The base URL of the test
      */
-    onTransformHarLookupParams?: HarLookupParamsTransformFunction;
+    onTransformHarLookupParams?: (
+        params: Parameters<HarLookupParamsTransformFunction>[0],
+        baseURL: string,
+    ) => ReturnType<HarLookupParamsTransformFunction>;
 
     /**
      * Callback for transforming the search query result into .har
+     * @param result The lookup result
+     * @param params The lookup parameters
+     * @param baseURL The base URL of the test
      */
-    onTransformHarLookupResult?: HarLookupResultTransformFunction;
+    onTransformHarLookupResult?: (
+        result: Parameters<HarLookupResultTransformFunction>[0],
+        params: Parameters<HarLookupResultTransformFunction>[1],
+        baseURL: string,
+    ) => ReturnType<HarLookupResultTransformFunction>;
+
+    /**
+     * Function to conditionally enable or disable the mock network fixture
+     * @param options Test fixture arguments and options (includes custom test args if extended)
+     * @returns `true` to enable the fixture, `false` to disable it
+     */
+    enabled?: (options: TestArgs) => boolean;
 };

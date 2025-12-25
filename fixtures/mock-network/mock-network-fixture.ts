@@ -5,20 +5,27 @@ import { initDumps } from '../../har';
 import { harPatcher } from './har-patcher';
 import type { MockNetworkFixtureBuilderParams } from './types';
 
-export function mockNetworkFixtureBuilder({
+export function mockNetworkFixtureBuilder<
+    TestArgs extends PlaywrightTestArgs & PlaywrightTestOptions = PlaywrightTestArgs &
+        PlaywrightTestOptions,
+>({
     shouldUpdate,
     forceUpdateIfHarMissing,
     updateTimeout,
     zip = true,
     url: urlMatcherBuilder,
     dumpsFilePath,
-
+    enabled,
     ...harPatcherParams
-}: MockNetworkFixtureBuilderParams) {
-    const mockNetworkFixture: TestFixture<
-        boolean,
-        PlaywrightTestArgs & PlaywrightTestOptions
-    > = async ({ baseURL: rawBaseURL, page }, use, testInfo) => {
+}: MockNetworkFixtureBuilderParams<TestArgs>) {
+    const mockNetworkFixture: TestFixture<boolean, TestArgs> = async (options, use, testInfo) => {
+        const { baseURL: rawBaseURL, page } = options;
+
+        if (enabled && !enabled(options)) {
+            await use(false);
+            return;
+        }
+
         if (!rawBaseURL) {
             throw new Error('baseURL should be specified in playwright config');
         }

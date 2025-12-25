@@ -66,7 +66,7 @@ export function harPatcher({
 
         replaceBaseUrlInEntry(entry, baseURL, baseUrlPLaceholder);
 
-        onHarEntryWillWrite?.(entry);
+        onHarEntryWillWrite?.(entry, baseURL);
     });
 
     addHarOpenTransform((harFile) => {
@@ -74,11 +74,18 @@ export function harPatcher({
 
         for (const entry of entries) {
             replaceBaseUrlInEntry(entry, baseUrlPLaceholder, baseURL);
-            onHarEntryWillRead?.(entry);
+            onHarEntryWillRead?.(entry, baseURL);
         }
     });
 
-    addHarLookupTransform(onTransformHarLookupParams, onTransformHarLookupResult);
+    addHarLookupTransform(
+        onTransformHarLookupParams
+            ? (params) => onTransformHarLookupParams(params, baseURL)
+            : undefined,
+        onTransformHarLookupResult
+            ? (result, params) => onTransformHarLookupResult(result, params, baseURL)
+            : undefined,
+    );
 
     // Filter out canceled requests before writing to har file
     addFlushTransform((entries) => entries.filter((entry: Entry) => entry.time !== -1));
