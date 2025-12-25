@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/gravity-ui/playwright-tools/compare/v1.0.0...v1.1.0) (2025-12-25)
+
+
+### Features
+
+* optionally enabled + add base url in harPatcher callbacks ([#43](https://github.com/gravity-ui/playwright-tools/issues/43)) ([b26019a](https://github.com/gravity-ui/playwright-tools/commit/b26019ad8045586647b2b3fc43e52f4b6b0c7d34))
+
 ## [1.0.0](https://github.com/gravity-ui/playwright-tools/compare/v0.9.2...v1.0.0) (2025-12-10)
 
 
