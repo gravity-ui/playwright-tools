@@ -108,4 +108,11 @@ export type MockNetworkFixtureBuilderParams<
      * @returns `true` to enable the fixture, `false` to disable it
      */
     enabled?: (options: TestArgs) => boolean;
+
+    /**
+     * Flag to enable or disable adding the x-tests-duplicate-id header for identical requests
+     * By default, the header is not added
+     * @defaultValue `false`
+     */
+    shouldMarkIdenticalRequests?: boolean;
 };
