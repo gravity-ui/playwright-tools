@@ -13,5 +13,12 @@ export { clearHeaders } from './clearHeaders';
 export { initDumps } from './initDumps';
 export { replaceBaseUrlInEntry } from './replaceBaseUrlInEntry';
 export { setExtraHash } from './setExtraHash';
-export type { HARFile, Entry } from './types';
+export type {
+    HARFile,
+    Entry,
+    Header,
+    LocalUtilsHarLookupParams,
+    LocalUtilsHarLookupResult,
+    QueryParameter,
+} from './types';
 export { defaultDumpsFilePathBuilder, dumpsPathBuldeWithSlugBuilder } from './dumpsFilePathBulders';

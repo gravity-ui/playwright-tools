@@ -5,7 +5,7 @@ import type { Entry, Header } from './types';
 /**
  * Replaces the base URL in the HAR file request entry
  *
- * @param entry ЗRecording from HAR file
+ * @param entry Recording from HAR file
  * @param fromUrl URL to replace
  * @param toUrl URL to replace with
  */
