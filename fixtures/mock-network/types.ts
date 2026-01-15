@@ -1,4 +1,4 @@
-import type { PlaywrightTestArgs, PlaywrightTestOptions, TestInfo } from '@playwright/test';
+import type { TestInfo } from '@playwright/test';
 
 import type {
     Entry,
@@ -6,10 +6,7 @@ import type {
     HarLookupResultTransformFunction,
 } from '../../har';
 
-export type MockNetworkFixtureBuilderParams<
-    TestArgs extends PlaywrightTestArgs & PlaywrightTestOptions = PlaywrightTestArgs &
-        PlaywrightTestOptions,
-> = {
+export type MockNetworkFixtureBuilderParams = {
     /**
      * Update dumps or not
      * @defaultValue `false`
@@ -103,11 +100,11 @@ export type MockNetworkFixtureBuilderParams<
     ) => ReturnType<HarLookupResultTransformFunction>;
 
     /**
-     * Function to conditionally enable or disable the mock network fixture
-     * @param options Test fixture arguments and options (includes custom test args if extended)
-     * @returns `true` to enable the fixture, `false` to disable it
+     * Allow optionally enable fixture.
+     * Set "enableNetworkMocking" fixture to turn on/off network mocking
+     * @defaultValue false `
      */
-    enabled?: (options: TestArgs) => boolean;
+    optionallyEnabled?: boolean;
 
     /**
      * Flag to enable or disable adding the x-tests-duplicate-id header for identical requests
@@ -115,4 +112,8 @@ export type MockNetworkFixtureBuilderParams<
      * @defaultValue `false`
      */
     shouldMarkIdenticalRequests?: boolean;
+};
+
+export type OptionallyEnabledTestArgs = {
+    enableNetworkMocking?: boolean;
 };
