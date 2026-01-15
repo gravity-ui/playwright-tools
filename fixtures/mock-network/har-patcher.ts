@@ -85,49 +85,29 @@ export function harPatcher({
         }
     });
 
-    addHarLookupTransform(
-        onTransformHarLookupParams
-            ? (params) => onTransformHarLookupParams(params, baseURL)
-            : undefined,
-        onTransformHarLookupResult
-            ? (result, params) => onTransformHarLookupResult(result, params, baseURL)
-            : undefined,
-    );
+    // Create duplicate ID transformer once to preserve state between calls
+    const duplicateIdTransform = shouldMarkIdenticalRequests ? createDuplicateIdTransform() : null;
 
-    // Filter out canceled requests before writing to har file
-    addFlushTransform((entries) => entries.filter((entry: Entry) => entry.time !== -1));
+    const onTransformHarLookupParamsFinal = (params: LocalUtilsHarLookupParams) => {
+        // Apply duplicate ID transform first (if enabled)
+        const modifiedParams = duplicateIdTransform ? duplicateIdTransform(params) : params;
 
-    // Automatic marking of identical requests during replay (if enabled)
-    if (shouldMarkIdenticalRequests) {
-        const duplicateIdTransform = createDuplicateIdTransform();
+        // Then apply custom transformer (if provided)
+        return onTransformHarLookupParams
+            ? onTransformHarLookupParams(modifiedParams, baseURL)
+            : modifiedParams;
+    };
 
-        // Combine our transformer with the custom one (if any)
-        const onTransformHarLookupParamsResult = onTransformHarLookupParams
-            ? (params: LocalUtilsHarLookupParams) => {
-                  // First apply our transformer
-                  const paramsWithDuplicateId = duplicateIdTransform(params);
-                  // Then apply the custom one
-                  return onTransformHarLookupParams(paramsWithDuplicateId, baseURL);
-              }
-            : duplicateIdTransform;
+    const onTransformHarLookupResultFinal = (
+        result: LocalUtilsHarLookupResult,
+        params: LocalUtilsHarLookupParams,
+    ) => {
+        return onTransformHarLookupResult
+            ? onTransformHarLookupResult(result, params, baseURL)
+            : result;
+    };
 
-        const onTransformHarLookupResultResult = onTransformHarLookupResult
-            ? (result: LocalUtilsHarLookupResult, params: LocalUtilsHarLookupParams) =>
-                  onTransformHarLookupResult(result, params, baseURL)
-            : undefined;
-
-        addHarLookupTransform(onTransformHarLookupParamsResult, onTransformHarLookupResultResult);
-    } else {
-        // If marking is disabled, but there are custom transformers - apply them
-        addHarLookupTransform(
-            onTransformHarLookupParams
-                ? (params) => onTransformHarLookupParams(params, baseURL)
-                : undefined,
-            onTransformHarLookupResult
-                ? (result, params) => onTransformHarLookupResult(result, params, baseURL)
-                : undefined,
-        );
-    }
+    addHarLookupTransform(onTransformHarLookupParamsFinal, onTransformHarLookupResultFinal);
 
     // Transform requests before writing to har file
     addFlushTransform((entries) => {
