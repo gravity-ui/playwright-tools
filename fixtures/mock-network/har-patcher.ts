@@ -1,5 +1,7 @@
 import {
     type Entry,
+    type LocalUtilsHarLookupParams,
+    type LocalUtilsHarLookupResult,
     addFlushTransform,
     addHarLookupTransform,
     addHarOpenTransform,
@@ -7,6 +9,8 @@ import {
     clearHeaders,
     replaceBaseUrlInEntry,
 } from '../../har';
+import { createDuplicateIdTransform } from '../../utils/createDuplicateIdTransform';
+import { markIdenticalRequests } from '../../utils/markIdenticalRequests';
 
 import type { MockNetworkFixtureBuilderParams } from './types';
 
@@ -28,6 +32,7 @@ export type HarPatcherParams = Pick<
     | 'onHarEntryWillWrite'
     | 'onTransformHarLookupParams'
     | 'onTransformHarLookupResult'
+    | 'shouldMarkIdenticalRequests'
 > & {
     /**
      * Base url of the test
@@ -46,6 +51,8 @@ export function harPatcher({
 
     onTransformHarLookupParams,
     onTransformHarLookupResult,
+
+    shouldMarkIdenticalRequests = false,
 }: HarPatcherParams) {
     const headersToRemove = new Set([...DEFAULT_REMOVE_HEADERS, ...additionalHeadersToRemove]);
     const setCookieToRemove = new Set([
@@ -78,15 +85,40 @@ export function harPatcher({
         }
     });
 
-    addHarLookupTransform(
-        onTransformHarLookupParams
-            ? (params) => onTransformHarLookupParams(params, baseURL)
-            : undefined,
-        onTransformHarLookupResult
-            ? (result, params) => onTransformHarLookupResult(result, params, baseURL)
-            : undefined,
-    );
+    // Create duplicate ID transformer once to preserve state between calls
+    const duplicateIdTransform = shouldMarkIdenticalRequests ? createDuplicateIdTransform() : null;
 
-    // Filter out canceled requests before writing to har file
-    addFlushTransform((entries) => entries.filter((entry: Entry) => entry.time !== -1));
+    const onTransformHarLookupParamsFinal = (params: LocalUtilsHarLookupParams) => {
+        // Apply duplicate ID transform first (if enabled)
+        const modifiedParams = duplicateIdTransform ? duplicateIdTransform(params) : params;
+
+        // Then apply custom transformer (if provided)
+        return onTransformHarLookupParams
+            ? onTransformHarLookupParams(modifiedParams, baseURL)
+            : modifiedParams;
+    };
+
+    const onTransformHarLookupResultFinal = (
+        result: LocalUtilsHarLookupResult,
+        params: LocalUtilsHarLookupParams,
+    ) => {
+        return onTransformHarLookupResult
+            ? onTransformHarLookupResult(result, params, baseURL)
+            : result;
+    };
+
+    addHarLookupTransform(onTransformHarLookupParamsFinal, onTransformHarLookupResultFinal);
+
+    // Transform requests before writing to har file
+    addFlushTransform((entries) => {
+        // Before writing to har file, filter out canceled requests
+        const filteredEntries = entries.filter((entry: Entry) => entry.time !== -1);
+
+        // Add x-tests-duplicate-id header for identical requests (if enabled)
+        if (shouldMarkIdenticalRequests) {
+            return markIdenticalRequests(filteredEntries);
+        }
+
+        return filteredEntries;
+    });
 }
