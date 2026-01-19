@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/gravity-ui/playwright-tools/compare/v1.1.0...v1.1.1) (2026-01-19)
+
+
+### Bug Fixes
+
+* optionally enabled with fixture ([#46](https://github.com/gravity-ui/playwright-tools/issues/46)) ([618a597](https://github.com/gravity-ui/playwright-tools/commit/618a5979a85ba1791b5b5301dbe828fbd58b3ce0))
+
 ## [1.1.0](https://github.com/gravity-ui/playwright-tools/compare/v1.0.0...v1.1.0) (2025-12-25)
 
 
