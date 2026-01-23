@@ -43,7 +43,7 @@ const fixtureFunction = async (
 
     const url = urlMatcherBuilder(baseURL);
 
-    await initDumps(page, testInfo, {
+    const finalUpdate = await initDumps(page, testInfo, {
         dumpsFilePath,
         forceUpdateIfHarMissing,
         updateTimeout,
@@ -52,7 +52,7 @@ const fixtureFunction = async (
         zip,
     });
 
-    await use(!update);
+    await use(!finalUpdate);
 };
 
 export function mockNetworkFixtureBuilder<

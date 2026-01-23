@@ -10,6 +10,7 @@ export { addHarRecorderTransform } from './addHarRecorderTransform';
 export type { FlushTransformFunction } from './addFlushTransform';
 export { addFlushTransform } from './addFlushTransform';
 export { clearHeaders } from './clearHeaders';
+export type { InitDumpsOptions } from './initDumps';
 export { initDumps } from './initDumps';
 export { replaceBaseUrlInEntry } from './replaceBaseUrlInEntry';
 export { setExtraHash } from './setExtraHash';

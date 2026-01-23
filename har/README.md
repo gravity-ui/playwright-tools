@@ -220,9 +220,10 @@ test('My test', async ({ page }) => {
 ## initDumps
 
 Makes necessary preparations for saving request dumps.
+Returns `true` when working in update mode.
 
 ```ts
-async function initDumps(page: Page, testInfo: TestInfo, options?: InitDumpsOptions): void;
+async function initDumps(page: Page, testInfo: TestInfo, options?: InitDumpsOptions): boolean;
 ```
 
 ```ts
