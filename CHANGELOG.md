@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/gravity-ui/playwright-tools/compare/v1.1.1...v1.1.2) (2026-01-27)
+
+
+### Bug Fixes
+
+* mockNetworkFixture return is actually mocking happened ([#49](https://github.com/gravity-ui/playwright-tools/issues/49)) ([884e9a4](https://github.com/gravity-ui/playwright-tools/commit/884e9a4e540d9fb2cd490828dc42ad1084c191f2))
+
 ## [1.1.1](https://github.com/gravity-ui/playwright-tools/compare/v1.1.0...v1.1.1) (2026-01-19)
 
 
