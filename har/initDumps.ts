@@ -60,6 +60,7 @@ export type InitDumpsOptions = {
 
 /**
  * Makes the necessary preparations for saving query dumps
+ * @returns boolean - true if update mode is active, false if mock mode is active
  */
 export async function initDumps(
     page: Page,
@@ -74,7 +75,7 @@ export async function initDumps(
         zip = true,
         update = false,
     }: InitDumpsOptions = {},
-) {
+): Promise<boolean> {
     let harPath: string;
 
     harPath = dumpsFilePathBuilder({ testInfo, zip });
@@ -105,4 +106,6 @@ export async function initDumps(
         notFound,
         url,
     });
+
+    return update;
 }

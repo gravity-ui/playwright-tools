@@ -282,6 +282,35 @@ type MockNetworkFixtureBuilderParams = {
     onTransformHarLookupResult?: HarLookupResultTransformFunction;
 };
 ```
+You can turn on/off fixture dynamically. For example, set different values for different projects.
+Usage in optionally enabled mode
+
+```ts
+import { mockNetworkFixtureBuilder } from 'playwright-tools/fixtures';
+
+export type TestExtraFixtures = {
+    enableNetworkMocking: boolean; // typing for flag
+    isNetworkMocked: boolean;
+};
+
+const NEED_TO_UPDATE = process.env.UPDATE_DUMPS;
+
+const mockNetwork = mockNetworkFixtureBuilder({
+    shouldUpdate: NEED_TO_UPDATE,
+    forceUpdateIfHarMissing: !process.env.CI,
+    optionallyEnabled: true, // turn on flag
+
+    url: (baseURL) => {
+        /* ... */
+    },
+   /* ... */
+});
+
+export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
+    enableNetworkMocking: [false, { option: true }], // turn on/off with this value
+    isNetworkMocked: mockNetwork,
+});
+```
 
 ## globalSettings
 
