@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/gravity-ui/playwright-tools/compare/v1.1.2...v1.1.3) (2026-01-29)
+
+
+### Bug Fixes
+
+* component tests -&gt; fixed mount was throwing error ([#53](https://github.com/gravity-ui/playwright-tools/issues/53)) ([8fce986](https://github.com/gravity-ui/playwright-tools/commit/8fce9864fceb9d80ac579eca5d1fa597bef4bda8)), closes [#52](https://github.com/gravity-ui/playwright-tools/issues/52)
+
 ## [1.1.2](https://github.com/gravity-ui/playwright-tools/compare/v1.1.1...v1.1.2) (2026-01-27)
 
 
