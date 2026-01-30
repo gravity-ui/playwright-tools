@@ -67,7 +67,7 @@ export const globalSettings = {
         /**
          * Default screenshot name
          */
-        name: 'plain' as string | undefined,
+        name: undefined as string | undefined,
         /**
          * Should I add a slug to the screenshot file name?
          */
