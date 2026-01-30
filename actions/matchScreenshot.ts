@@ -160,7 +160,7 @@ export async function matchScreenshot(
 
     await onBeforeScreenshot?.(page, combinedOptions);
 
-    const slug = getTestSlug(page);
+    const slug = shouldPrependSlugToName ? getTestSlug(page) : undefined;
 
     await page.waitForTimeout(pause);
 
@@ -175,7 +175,6 @@ export async function matchScreenshot(
                 name: resolvedName,
                 slug,
                 options: combinedOptions,
-                shouldPrependSlugToName,
                 soft,
             });
         }
@@ -185,7 +184,6 @@ export async function matchScreenshot(
             name,
             slug,
             options: combinedOptions,
-            shouldPrependSlugToName,
             soft,
         });
     }
@@ -199,13 +197,12 @@ export async function matchScreenshot(
 async function doMatchScreenshot(params: {
     locator: Locator | Page;
     name?: string;
-    slug: string;
+    slug?: string;
     options: ScreenshotOptions;
-    shouldPrependSlugToName: boolean;
     soft: boolean;
 }): Promise<void> {
-    const { locator, name, slug, options, shouldPrependSlugToName, soft } = params;
-    const resolvedName = resolveScreenshotName({ name, slug, shouldPrependSlugToName });
+    const { locator, name, slug, options, soft } = params;
+    const resolvedName = resolveScreenshotName({ name, slug });
     const resolvedExpect = soft ? expect.soft : expect;
 
     if (resolvedName) {
@@ -215,12 +212,8 @@ async function doMatchScreenshot(params: {
     }
 }
 
-function resolveScreenshotName(params: {
-    name?: string;
-    slug: string;
-    shouldPrependSlugToName: boolean;
-}) {
-    const { name, slug, shouldPrependSlugToName } = params;
+function resolveScreenshotName(params: { name?: string; slug?: string }) {
+    const { name, slug } = params;
 
     if (!name) {
         return undefined;
@@ -228,7 +221,7 @@ function resolveScreenshotName(params: {
 
     const resolvedName = [name + '.png'];
 
-    if (shouldPrependSlugToName) {
+    if (slug) {
         resolvedName.unshift(slug);
     }
 

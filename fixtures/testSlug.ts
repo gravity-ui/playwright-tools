@@ -11,7 +11,7 @@ const testSlugValue: TestFixture<TestSlugResult, PlaywrightTestArgsBase> = async
     use,
     testInfo,
 ) => {
-    setTestSlug(page, testInfo.title, true);
+    setTestSlug(page, testInfo.title);
 
     const slug = getTestSlug(page);
 

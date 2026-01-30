@@ -19,6 +19,7 @@ export type ExpectScreenshotFixtureBuilderParams = Pick<
 > & {
     screenshotOptions?: DefaultScreenshotOptions;
     getDefaultMask?: (page: Page) => Locator[];
+    getDefaultLocator?: (page: Page) => Locator | Page;
 };
 
 export type ExpectScreenshotFn = (params?: ExpectScreenshotOptions) => Promise<void>;

@@ -7,6 +7,7 @@ import type { ExpectScreenshotFixtureBuilderParams, ExpectScreenshotFn } from '.
 export function expectScreenshotFixtureBuilder({
     screenshotOptions,
     getDefaultMask,
+    getDefaultLocator,
 
     ...restDefaults
 }: ExpectScreenshotFixtureBuilderParams = {}) {
@@ -17,6 +18,7 @@ export function expectScreenshotFixtureBuilder({
         const expectScreenshot: ExpectScreenshotFn = ({
             options = {},
             shouldUseDefaultMask = true,
+            locator,
             ...restParams
         } = {}) => {
             const { mask = [] } = options;
@@ -24,8 +26,11 @@ export function expectScreenshotFixtureBuilder({
             const defaultMask = shouldUseDefaultMask && getDefaultMask ? getDefaultMask(page) : [];
             const maskToUse = [...mask, ...defaultMask];
 
+            const locatorToUse = locator ?? getDefaultLocator?.(page);
+
             const mergedOptions = {
                 options: { ...screenshotOptions, ...options, mask: maskToUse },
+                locator: locatorToUse,
                 ...restDefaults,
                 ...restParams,
             };
