@@ -142,13 +142,23 @@ type ExpectScreenshotFixtureBuilderParams = {
      */
     onSwitchTheme?: (theme: Theme, page: Page) => Promise<void>;
     /**
-     * Callback to get default mask. This mask will hide elements before test 
+     * Callback to get default mask. This mask will hide elements before test
      * The mask will be applied if no other mask is passed to the test
      * @param page Page current page
-     * 
+     *
      * @returns Locator[] list of locators to hide
      */
     getDefaultMask?: (page: Page) => Locator[];
+    /**
+     * Callback to get default locator for screenshots.
+     * Useful for component testing to default to the mounted component wrapper
+     * instead of the full page.
+     * If not provided, full page screenshot will be used.
+     * @param page Page current page
+     *
+     * @returns Locator | Page default locator to use for screenshots
+     */
+    getDefaultLocator?: (page: Page) => Locator | Page;
 };
 ```
 

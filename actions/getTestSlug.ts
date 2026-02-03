@@ -10,5 +10,7 @@ export function getTestSlug(page: Page) {
         return testSlugs.get(page)!;
     }
 
-    throw new Error("Can't find slug for test");
+    throw new Error(
+        "Can't find slug for test. Probably you need to add testSlug fixture to your test config",
+    );
 }
