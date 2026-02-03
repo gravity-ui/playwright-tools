@@ -71,7 +71,7 @@ export const globalSettings = {
         /**
          * Should I add a slug to the screenshot file name?
          */
-        shouldPrependSlugToName: true,
+        shouldPrependSlugToName: false,
         /**
          * Topics that require a screenshot
          * By default, screenshots are taken for the current theme. Switching does not occur
