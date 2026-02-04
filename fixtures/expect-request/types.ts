@@ -9,3 +9,7 @@ export type ExpectRequestFn = (
 export interface ExpectRequestTestArgs {
     expectRequest: ExpectRequestFn;
 }
+
+export type ExpectRequestWorkerArgs = {};
+
+export type ExpectRequestFixturesBuilderParams = {};

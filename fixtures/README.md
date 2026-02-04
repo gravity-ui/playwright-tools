@@ -7,14 +7,19 @@ Allows checking whether a request was made to an endpoint with specified paramet
 Extend `test` in Playwright:
 
 ```ts
-import { expectRequest, type ExpectRequestFn } from 'playwright-tools/fixtures';
+import type {
+    ExpectRequestTestArgs,
+    ExpectRequestWorkerArgs,
+} from 'playwright-tools/fixtures';
+import { expectRequestFixturesBuilder } from 'playwright-tools/fixtures';
 
-export type TestExtraFixtures = {
-    expectRequest: ExpectRequestFn;
-};
+export type TestExtraFixtures = ExpectRequestTestArgs;
+export type WorkerExtraFixtures = ExpectRequestWorkerArgs;
+
+const expectRequestFixtures = expectRequestFixturesBuilder();
 
 export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    expectRequest,
+    ...expectRequestFixtures,
 });
 ```
 
@@ -51,24 +56,27 @@ Allows performing checks using screenshots
 Extend `test` in Playwright:
 
 ```ts
-import { expectScreenshotFixtureBuilder, type ExpectScreenshotFn } from 'playwright-tools/fixtures';
+import type {
+    ExpectScreenshotTestArgs,
+    ExpectScreenshotWorkerArgs
+} from 'playwright-tools/fixtures';
+import { expectScreenshotFixturesBuilder } from 'playwright-tools/fixtures';
 
-const expectScreenshot = expectScreenshotFixtureBuilder({
+export type TestExtraFixtures = ExpectScreenshotTestArgs;
+export type WorkerExtraFixtures = ExpectScreenshotWorkerArgs;
+
+const expectScreenshotFixtures = expectScreenshotFixturesBuilder({
     screenshotOptions: {
         animations: 'disabled',
     },
     soft: true,
 
     themes: ['dark', 'light'],
-})
-
-export type TestExtraFixtures = {
-    expectScreenshot: ExpectScreenshotFn;
-};
+});
 
 export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    expectScreenshot,
-})
+    ...expectScreenshotFixtures,
+});
 ```
 
 Usage in test:
@@ -170,16 +178,19 @@ When the fixture is enabled, all requests matching the passed regular expression
 Extend `test` in Playwright:
 
 ```ts
-import { mockNetworkFixtureBuilder } from 'playwright-tools/fixtures';
+import type {
+    MockNetworkTestArgs,
+    MockNetworkWorkerArgs,
+} from 'playwright-tools/fixtures';
+import { mockNetworkFixturesBuilder } from 'playwright-tools/fixtures';
 
-export type TestExtraFixtures = {
-    isNetworkMocked: boolean;
-};
+export type TestExtraFixtures = MockNetworkTestArgs;
+export type WorkerExtraFixtures = MockNetworkWorkerArgs;
 
 // Flag indicating whether requests are currently being recorded or read, must be passed externally. The name UPDATE_DUMPS is chosen as an example
 const NEED_TO_UPDATE = process.env.UPDATE_DUMPS;
 
-const mockNetwork = mockNetworkFixtureBuilder({
+const mockNetworkFixtures = mockNetworkFixturesBuilder({
     shouldUpdate: NEED_TO_UPDATE,
     forceUpdateIfHarMissing: !process.env.CI,
 
@@ -197,19 +208,44 @@ const mockNetwork = mockNetworkFixtureBuilder({
 });
 
 export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    isNetworkMocked: mockNetwork,
+    ...mockNetworkFixtures,
 });
 ```
 
-Now tests will run on recorded data. In the tests themselves, you can get the flag indicating whether the network is mocked as follows:
+The fixture provides two values:
+- `enableNetworkMocking`: A boolean option that can be configured per project to enable/disable network mocking. Defaults to `true`.
+- `isMockingEnabled`: A boolean indicating whether mocking is currently active (depends on `enableNetworkMocking` value).
+
+You can configure `enableNetworkMocking` per project in your Playwright config:
 
 ```ts
-test('Some random test', async ({ page, isNetworkMocked }) => {
-    // isNetworkMocked === true
+export default defineConfig({
+    projects: [
+        {
+            name: 'with-mocking',
+            use: {
+                enableNetworkMocking: true,
+            },
+        },
+        {
+            name: 'without-mocking',
+            use: {
+                enableNetworkMocking: false,
+            },
+        },
+    ],
 });
 ```
 
-`mockNetworkFixtureBuilder` parameters:
+Usage in test:
+
+```ts
+test('Some random test', async ({ page, isMockingEnabled }) => {
+    // isMockingEnabled === true (when enableNetworkMocking is true)
+});
+```
+
+`mockNetworkFixturesBuilder` parameters:
 
 ```ts
 type MockNetworkFixtureBuilderParams = {
@@ -292,35 +328,6 @@ type MockNetworkFixtureBuilderParams = {
     onTransformHarLookupResult?: HarLookupResultTransformFunction;
 };
 ```
-You can turn on/off fixture dynamically. For example, set different values for different projects.
-Usage in optionally enabled mode
-
-```ts
-import { mockNetworkFixtureBuilder } from 'playwright-tools/fixtures';
-
-export type TestExtraFixtures = {
-    enableNetworkMocking: boolean; // typing for flag
-    isNetworkMocked: boolean;
-};
-
-const NEED_TO_UPDATE = process.env.UPDATE_DUMPS;
-
-const mockNetwork = mockNetworkFixtureBuilder({
-    shouldUpdate: NEED_TO_UPDATE,
-    forceUpdateIfHarMissing: !process.env.CI,
-    optionallyEnabled: true, // turn on flag
-
-    url: (baseURL) => {
-        /* ... */
-    },
-   /* ... */
-});
-
-export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    enableNetworkMocking: [false, { option: true }], // turn on/off with this value
-    isNetworkMocked: mockNetwork,
-});
-```
 
 ## globalSettings
 
@@ -364,19 +371,23 @@ Uses `setTestSlug` and `getTestSlug` internally.
 Extend `test` in Playwright:
 
 ```ts
-import type { TestSlugResult } from 'playwright-tools/fixtures';
-import { testSlug } from 'playwright-tools/fixtures';
+import type {
+    TestSlugTestArgs,
+    TestSlugWorkerArgs,
+} from 'playwright-tools/fixtures';
+import { testSlugFixturesBuilder } from 'playwright-tools/fixtures';
 
-export type TestExtraFixtures = {
-    testSlug: TestSlugResult;
-};
+export type TestExtraFixtures = TestSlugTestArgs;
+export type WorkerExtraFixtures = TestSlugWorkerArgs;
+
+const testSlugFixtures = testSlugFixturesBuilder();
 
 export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    testSlug,
+    ...testSlugFixtures,
 });
 ```
 
-Now in tests and other fixtures we have access to the `testSlug` value:
+Usage in test:
 
 ```ts
 test('Some my test [test-slug]', async ({ page, testSlug }) => {
