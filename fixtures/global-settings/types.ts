@@ -8,11 +8,18 @@ export type GlobalSettingsFixturesBuilderParams = {
     globalSettings: PartialGlobalSettings;
 };
 
-export type GlobalSettingsWorkerArgs = {
-    initGlobalSettings: void;
-};
-
 export type GlobalSettingsTestArgs = {
     setGlobalSettings: typeof setGlobalSettings;
     getGlobalSettings: typeof getGlobalSettings;
 };
+export type GlobalSettingsTestOptions = {};
+
+export type GlobalSettingsWorkerArgs = {
+    initGlobalSettings: void;
+};
+export type GlobalSettingsWorkerOptions = {};
+
+export type GlobalSettingsTestFixtures = GlobalSettingsTestArgs & GlobalSettingsTestOptions;
+export type GlobalSettingsWorkerFixtures = GlobalSettingsWorkerArgs & GlobalSettingsWorkerOptions;
+
+export type GlobalSettingsFixtures = GlobalSettingsTestFixtures & GlobalSettingsWorkerFixtures;

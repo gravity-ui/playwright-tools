@@ -116,3 +116,7 @@ dist
 # Build files
 *.d.ts
 *.js
+
+# Playwright
+playwright-report/
+test-results/

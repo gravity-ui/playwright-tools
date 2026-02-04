@@ -1,0 +1,17 @@
+name: PR Integration Tests
+
+on:
+  pull_request:
+
+jobs:
+  integration_tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+    steps:
+      - uses: gravity-ui/component-tests-run-action@v1
+        with:
+          command: npm run test:integration
+          report-path: ./playwright-report
+          node-version-file: '.nvmrc'

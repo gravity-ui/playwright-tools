@@ -12,8 +12,8 @@ import { getGlobalSettings, setGlobalSettings } from '../../actions';
 
 import type {
     GlobalSettingsFixturesBuilderParams,
-    GlobalSettingsTestArgs,
-    GlobalSettingsWorkerArgs,
+    GlobalSettingsTestFixtures,
+    GlobalSettingsWorkerFixtures,
 } from './types';
 
 export function globalSettingsFixturesBuilder(
@@ -46,8 +46,8 @@ export function globalSettingsFixturesBuilder(
     };
 
     const fixtures: Fixtures<
-        GlobalSettingsTestArgs,
-        GlobalSettingsWorkerArgs,
+        GlobalSettingsTestFixtures,
+        GlobalSettingsWorkerFixtures,
         PlaywrightTestArgs & PlaywrightTestOptions,
         PlaywrightWorkerArgs & PlaywrightWorkerOptions
     > = {

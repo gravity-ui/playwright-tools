@@ -1,10 +1,24 @@
-import type { PlaywrightTestArgs, PlaywrightTestOptions, TestFixture } from '@playwright/test';
+import type {
+    Fixtures,
+    PlaywrightTestArgs,
+    PlaywrightTestOptions,
+    PlaywrightWorkerArgs,
+    PlaywrightWorkerOptions,
+    TestFixture,
+} from '@playwright/test';
 
 import { createComponentWrapper } from './mount-wrapper';
-import type { MountFn, MountTestArgs } from './types';
+import type {
+    CtReactBaseTestArgs,
+    MountFixturesBuilderParams,
+    MountFn,
+    MountTestFixtures,
+    MountWorkerFixtures,
+} from './types';
 
 /**
- * Enhanced mount fixture that wraps components with styling and layout controls.
+ * Builder function for mount fixtures.
+ * Creates an enhanced mount fixture that wraps components with styling and layout controls.
  *
  * This fixture intercepts the base mount function to:
  * 1. Always wrap components in a div with TEST_WRAPPER_CLASS for screenshot targeting
@@ -16,17 +30,30 @@ import type { MountFn, MountTestArgs } from './types';
  * Playwright blocks function components defined in test context. See mount-wrapper.ts
  * for more details on this restriction.
  */
-export const mountFixture: TestFixture<
-    MountFn,
-    PlaywrightTestArgs & PlaywrightTestOptions & MountTestArgs
-> = async ({ mount: baseMount }, use) => {
-    const mount: MountFn = async (component, options) => {
-        const { width, rootStyle, ...baseMountOptions } = options || {};
+export function mountFixturesBuilder(_params: MountFixturesBuilderParams = {}) {
+    const mountFixture: TestFixture<
+        MountFn,
+        PlaywrightTestArgs & PlaywrightTestOptions & MountTestFixtures
+    > = async ({ mount: baseMount }, use) => {
+        const mount: MountFn = async (component, options) => {
+            const { width, rootStyle, ...baseMountOptions } = options || {};
 
-        const wrapper = createComponentWrapper(component, { width, rootStyle });
+            const wrapper = createComponentWrapper(component, { width, rootStyle });
 
-        return await baseMount(wrapper, baseMountOptions);
+            return await baseMount(wrapper, baseMountOptions);
+        };
+
+        await use(mount);
     };
 
-    await use(mount);
-};
+    const fixtures: Fixtures<
+        MountTestFixtures,
+        MountWorkerFixtures,
+        PlaywrightTestArgs & PlaywrightTestOptions & CtReactBaseTestArgs,
+        PlaywrightWorkerArgs & PlaywrightWorkerOptions
+    > = {
+        mount: [mountFixture, { scope: 'test' as const }],
+    };
+
+    return fixtures;
+}
