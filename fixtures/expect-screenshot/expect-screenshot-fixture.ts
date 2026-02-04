@@ -1,10 +1,22 @@
-import type { PlaywrightTestArgs, PlaywrightTestOptions, TestFixture } from '@playwright/test';
+import type {
+    Fixtures,
+    PlaywrightTestArgs,
+    PlaywrightTestOptions,
+    PlaywrightWorkerArgs,
+    PlaywrightWorkerOptions,
+    TestFixture,
+} from '@playwright/test';
 
 import { matchScreenshot } from '../../actions/matchScreenshot';
 
-import type { ExpectScreenshotFixtureBuilderParams, ExpectScreenshotFn } from './types';
+import type {
+    ExpectScreenshotFixtureBuilderParams,
+    ExpectScreenshotFn,
+    ExpectScreenshotTestArgs,
+    ExpectScreenshotWorkerArgs,
+} from './types';
 
-export function expectScreenshotFixtureBuilder({
+export function expectScreenshotFixturesBuilder({
     screenshotOptions,
     getDefaultMask,
     getDefaultLocator,
@@ -41,14 +53,14 @@ export function expectScreenshotFixtureBuilder({
         await use(expectScreenshot);
     };
 
-    const fixtureOptions = {
-        scope: 'test' as const,
+    const fixtures: Fixtures<
+        ExpectScreenshotTestArgs,
+        ExpectScreenshotWorkerArgs,
+        PlaywrightTestArgs & PlaywrightTestOptions,
+        PlaywrightWorkerArgs & PlaywrightWorkerOptions
+    > = {
+        expectScreenshot: [expectScreenshotFixture, { scope: 'test' }],
     };
 
-    const expectScreenshot: [typeof expectScreenshotFixture, typeof fixtureOptions] = [
-        expectScreenshotFixture,
-        fixtureOptions,
-    ];
-
-    return expectScreenshot;
+    return fixtures;
 }

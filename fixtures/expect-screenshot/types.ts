@@ -27,3 +27,5 @@ export type ExpectScreenshotFn = (params?: ExpectScreenshotOptions) => Promise<v
 export type ExpectScreenshotTestArgs = {
     expectScreenshot: ExpectScreenshotFn;
 };
+
+export type ExpectScreenshotWorkerArgs = {};

@@ -1,0 +1,40 @@
+name: PR Prerelease
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  prerelease:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.GRAVITY_UI_APP_ID }}
+          private-key: ${{ secrets.GRAVITY_UI_APP_PRIVATE_KEY }}
+      - name: Publish PR prerelease
+        uses: gravity-ui/release-action@v1
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          npm-token: ${{ secrets.GRAVITY_UI_BOT_NPM_TOKEN }}
+          node-version: 20
+          npm-version: prerelease
+          npm-preid: beta.${{ github.event.pull_request.head.sha }}
+          npm-dist-tag: beta
+      - name: Get package info
+        id: package
+        uses: codex-team/action-nodejs-package-info@v1
+      - name: Create comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          header: prerelease-version
+          message: |
+            🚀 Prerelease version published!
+
+            Install this PR version:
+            ```bash
+            npm i --save-dev ${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}
+            ```
