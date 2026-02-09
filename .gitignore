@@ -120,3 +120,5 @@ dist
 # Playwright
 playwright-report/
 test-results/
+tests/report
+tests/report-docker
