@@ -1,2 +1,13 @@
-export type { MountFn, MountTestArgs } from './mount';
-export { mountFixture, TEST_WRAPPER_CLASS } from './mount';
+export type {
+    CtReactBaseTestArgs,
+    MountFixturesBuilderParams,
+    MountFn,
+    MountTestArgs,
+    MountTestOptions,
+    MountWorkerArgs,
+    MountWorkerOptions,
+    MountTestFixtures,
+    MountWorkerFixtures,
+    MountFixtures,
+} from './mount';
+export { mountFixturesBuilder, TEST_WRAPPER_CLASS } from './mount';

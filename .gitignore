@@ -116,3 +116,9 @@ dist
 # Build files
 *.d.ts
 *.js
+
+# Playwright
+playwright-report/
+test-results/
+tests/report
+tests/report-docker

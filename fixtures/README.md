@@ -7,14 +7,19 @@ Allows checking whether a request was made to an endpoint with specified paramet
 Extend `test` in Playwright:
 
 ```ts
-import { expectRequest, type ExpectRequestFn } from 'playwright-tools/fixtures';
+import type {
+    ExpectRequestTestFixtures,
+    ExpectRequestWorkerFixtures,
+} from 'playwright-tools/fixtures';
+import { expectRequestFixturesBuilder } from 'playwright-tools/fixtures';
 
-export type TestExtraFixtures = {
-    expectRequest: ExpectRequestFn;
-};
+export type TestExtraFixtures = ExpectRequestTestFixtures;
+export type WorkerExtraFixtures = ExpectRequestWorkerFixtures;
+
+const expectRequestFixtures = expectRequestFixturesBuilder();
 
 export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    expectRequest,
+    ...expectRequestFixtures,
 });
 ```
 
@@ -51,24 +56,27 @@ Allows performing checks using screenshots
 Extend `test` in Playwright:
 
 ```ts
-import { expectScreenshotFixtureBuilder, type ExpectScreenshotFn } from 'playwright-tools/fixtures';
+import type {
+    ExpectScreenshotTestFixtures,
+    ExpectScreenshotWorkerFixtures
+} from 'playwright-tools/fixtures';
+import { expectScreenshotFixturesBuilder } from 'playwright-tools/fixtures';
 
-const expectScreenshot = expectScreenshotFixtureBuilder({
+export type TestExtraFixtures = ExpectScreenshotTestFixtures;
+export type WorkerExtraFixtures = ExpectScreenshotWorkerFixtures;
+
+const expectScreenshotFixtures = expectScreenshotFixturesBuilder({
     screenshotOptions: {
         animations: 'disabled',
     },
     soft: true,
 
     themes: ['dark', 'light'],
-})
-
-export type TestExtraFixtures = {
-    expectScreenshot: ExpectScreenshotFn;
-};
+});
 
 export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    expectScreenshot,
-})
+    ...expectScreenshotFixtures,
+});
 ```
 
 Usage in test:
@@ -87,7 +95,7 @@ Additional `expectScreenshot` parameters:
 
 ```ts
 
-type ExpectScreenshotParams = MatchScreenshotParams & {
+type ExpectScreenshotOptions = MatchScreenshotOptions & {
     /**
      * Whether to use default mask when taking screenshot
      * The mask itself is taken from the `getDefaultMask` callback
@@ -104,7 +112,7 @@ type ExpectScreenshotFixtureBuilderParams = {
     /**
      * Screenshot creation and comparison parameters (parameters for `toHaveScreenshot` call)
      */
-    screenshotOptions?: ScreenshotOptions;
+    screenshotOptions?: Omit<ScreenshotOptions, 'mask'>;
     /**
      * CSS selectors (pure CSS only) of elements to hide
      */
@@ -121,7 +129,7 @@ type ExpectScreenshotFixtureBuilderParams = {
     soft?: boolean;
     /**
      * Whether to prepend slug to screenshot file name
-     * @default true
+     * @default false
      */
     shouldPrependSlugToName?: boolean;
     /**
@@ -133,7 +141,7 @@ type ExpectScreenshotFixtureBuilderParams = {
      * Callback before taking screenshot. Useful for special stabilizing actions
      * @param page Page current page
      */
-    onBeforeScreenshot?: (page: Page) => Promise<void>;
+    onBeforeScreenshot?: (page: Page, options: ScreenshotOptions) => Promise<void>;
     /**
      * Callback for switching theme on page before taking screenshot
      * By default, switches theme using `page.emulateMedia({ colorScheme: theme });`
@@ -170,16 +178,19 @@ When the fixture is enabled, all requests matching the passed regular expression
 Extend `test` in Playwright:
 
 ```ts
-import { mockNetworkFixtureBuilder } from 'playwright-tools/fixtures';
+import type {
+    MockNetworkTestFixtures,
+    MockNetworkWorkerFixtures,
+} from 'playwright-tools/fixtures';
+import { mockNetworkFixturesBuilder } from 'playwright-tools/fixtures';
 
-export type TestExtraFixtures = {
-    isNetworkMocked: boolean;
-};
+export type TestExtraFixtures = MockNetworkTestFixtures;
+export type WorkerExtraFixtures = MockNetworkWorkerFixtures;
 
 // Flag indicating whether requests are currently being recorded or read, must be passed externally. The name UPDATE_DUMPS is chosen as an example
 const NEED_TO_UPDATE = process.env.UPDATE_DUMPS;
 
-const mockNetwork = mockNetworkFixtureBuilder({
+const mockNetworkFixtures = mockNetworkFixturesBuilder({
     shouldUpdate: NEED_TO_UPDATE,
     forceUpdateIfHarMissing: !process.env.CI,
 
@@ -197,19 +208,44 @@ const mockNetwork = mockNetworkFixtureBuilder({
 });
 
 export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    isNetworkMocked: mockNetwork,
+    ...mockNetworkFixtures,
 });
 ```
 
-Now tests will run on recorded data. In the tests themselves, you can get the flag indicating whether the network is mocked as follows:
+The fixture provides two values:
+- `enableNetworkMocking`: A boolean option that can be configured per project to enable/disable network mocking. Defaults to `true`.
+- `isMockingEnabled`: A boolean indicating whether mocking is currently active (depends on `enableNetworkMocking` value).
+
+You can configure `enableNetworkMocking` per project in your Playwright config:
 
 ```ts
-test('Some random test', async ({ page, isNetworkMocked }) => {
-    // isNetworkMocked === true
+export default defineConfig({
+    projects: [
+        {
+            name: 'with-mocking',
+            use: {
+                enableNetworkMocking: true,
+            },
+        },
+        {
+            name: 'without-mocking',
+            use: {
+                enableNetworkMocking: false,
+            },
+        },
+    ],
 });
 ```
 
-`mockNetworkFixtureBuilder` parameters:
+Usage in test:
+
+```ts
+test('Some random test', async ({ page, isMockingEnabled }) => {
+    // isMockingEnabled === true (when enableNetworkMocking is true)
+});
+```
+
+`mockNetworkFixturesBuilder` parameters:
 
 ```ts
 type MockNetworkFixtureBuilderParams = {
@@ -270,56 +306,48 @@ type MockNetworkFixtureBuilderParams = {
      * Callback for processing requests and responses before saving to .har. Useful for various post-processing: cleaning, format changes, etc.
      * By default, sensitive headers are removed + request base URL is changed to a stub
      * @param entry Entry in .har to be recorded
+     * @param baseURL The base URL of the test
      */
-    onHarEntryWillWrite?: (entry: Entry) => void;
+    onHarEntryWillWrite?: (entry: Entry, baseURL: string) => void;
 
     /**
      * Callback for processing requests and responses recorded in .har before they're used
      * Useful for reverting changes made in onHarEntryWillWrite
      * By default, base URL stubs are replaced with actual test baseUrl
      * @param entry Entry in .har to be used
+     * @param baseURL The base URL of the test
      */
-    onHarEntryWillRead?: (entry: Entry) => void;
+    onHarEntryWillRead?: (entry: Entry, baseURL: string) => void;
 
     /**
      * Callback for changing .har request search parameters
+     * @param params The lookup parameters
+     * @param baseURL The base URL of the test
      */
-    onTransformHarLookupParams?: HarLookupParamsTransformFunction;
+    onTransformHarLookupParams?: (
+        params: Parameters<HarLookupParamsTransformFunction>[0],
+        baseURL: string,
+    ) => ReturnType<HarLookupParamsTransformFunction>;
 
     /**
      * Callback for transforming .har request search result
+     * @param result The lookup result
+     * @param params The lookup parameters
+     * @param baseURL The base URL of the test
      */
-    onTransformHarLookupResult?: HarLookupResultTransformFunction;
+    onTransformHarLookupResult?: (
+        result: Parameters<HarLookupResultTransformFunction>[0],
+        params: Parameters<HarLookupResultTransformFunction>[1],
+        baseURL: string,
+    ) => ReturnType<HarLookupResultTransformFunction>;
+
+    /**
+     * Flag to enable or disable adding the x-tests-duplicate-id header for identical requests
+     * By default, the header is not added
+     * @defaultValue `false`
+     */
+    shouldMarkIdenticalRequests?: boolean;
 };
-```
-You can turn on/off fixture dynamically. For example, set different values for different projects.
-Usage in optionally enabled mode
-
-```ts
-import { mockNetworkFixtureBuilder } from 'playwright-tools/fixtures';
-
-export type TestExtraFixtures = {
-    enableNetworkMocking: boolean; // typing for flag
-    isNetworkMocked: boolean;
-};
-
-const NEED_TO_UPDATE = process.env.UPDATE_DUMPS;
-
-const mockNetwork = mockNetworkFixtureBuilder({
-    shouldUpdate: NEED_TO_UPDATE,
-    forceUpdateIfHarMissing: !process.env.CI,
-    optionallyEnabled: true, // turn on flag
-
-    url: (baseURL) => {
-        /* ... */
-    },
-   /* ... */
-});
-
-export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    enableNetworkMocking: [false, { option: true }], // turn on/off with this value
-    isNetworkMocked: mockNetwork,
-});
 ```
 
 ## globalSettings
@@ -329,17 +357,17 @@ Fixture for managing playwright-tools global settings. Allows configuring global
 Extend `test` in Playwright:
 
 ```ts
-import type { GlobalSettingsTestArgs, GlobalSettingsWorkerArgs, } from 'playwright-tools/fixtures';
+import type { GlobalSettingsTestFixtures, GlobalSettingsWorkerFixtures, } from 'playwright-tools/fixtures';
 import { globalSettingsFixturesBuilder } from 'playwright-tools/fixtures';
 
-export type TestExtraFixtures = GlobalSettingsTestArgs;
-export type WorkerExtraFixtures = GlobalSettingsWorkerArgs;
+export type TestExtraFixtures = GlobalSettingsTestFixtures;
+export type WorkerExtraFixtures = GlobalSettingsWorkerFixtures;
 
 const globalSettingsFixtures = globalSettingsFixturesBuilder({
     globalSettings: {
         matchScreenshot: {
             pause: 1500, // 1500 ms pause before taking screenshot
-        },    
+        },
     }
 });
 
@@ -364,19 +392,23 @@ Uses `setTestSlug` and `getTestSlug` internally.
 Extend `test` in Playwright:
 
 ```ts
-import type { TestSlugResult } from 'playwright-tools/fixtures';
-import { testSlug } from 'playwright-tools/fixtures';
+import type {
+    TestSlugTestFixtures,
+    TestSlugWorkerFixtures,
+} from 'playwright-tools/fixtures';
+import { testSlugFixturesBuilder } from 'playwright-tools/fixtures';
 
-export type TestExtraFixtures = {
-    testSlug: TestSlugResult;
-};
+export type TestExtraFixtures = TestSlugTestFixtures;
+export type WorkerExtraFixtures = TestSlugWorkerFixtures;
+
+const testSlugFixtures = testSlugFixturesBuilder();
 
 export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    testSlug,
+    ...testSlugFixtures,
 });
 ```
 
-Now in tests and other fixtures we have access to the `testSlug` value:
+Usage in test:
 
 ```ts
 test('Some my test [test-slug]', async ({ page, testSlug }) => {
