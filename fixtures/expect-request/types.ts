@@ -6,6 +6,17 @@ export type ExpectRequestFn = (
     options?: ExpectRequestFnOptions,
 ) => Promise<void>;
 
-export interface ExpectRequestTestArgs {
+export type ExpectRequestTestArgs = {
     expectRequest: ExpectRequestFn;
-}
+};
+export type ExpectRequestTestOptions = {};
+
+export type ExpectRequestWorkerArgs = {};
+export type ExpectRequestWorkerOptions = {};
+
+export type ExpectRequestTestFixtures = ExpectRequestTestArgs & ExpectRequestTestOptions;
+export type ExpectRequestWorkerFixtures = ExpectRequestWorkerArgs & ExpectRequestWorkerOptions;
+
+export type ExpectRequestFixtures = ExpectRequestTestFixtures & ExpectRequestWorkerFixtures;
+
+export type ExpectRequestFixturesBuilderParams = {};

@@ -1,43 +1,55 @@
 import type {
+    Fixtures,
     PlaywrightTestArgs,
     PlaywrightTestOptions,
+    PlaywrightWorkerArgs,
+    PlaywrightWorkerOptions,
     Request,
     TestFixture,
 } from '@playwright/test';
 
 import { expectRequest as expectRequestFn } from '../../actions/expect-request';
 
-import type { ExpectRequestFn } from './types';
-
-export const expectRequestFixture: TestFixture<
+import type {
+    ExpectRequestFixturesBuilderParams,
     ExpectRequestFn,
-    PlaywrightTestOptions & PlaywrightTestArgs
-> = async ({ page, baseURL }, use) => {
-    if (!baseURL) {
-        throw new Error('Base URL required for requests matching!');
-    }
+    ExpectRequestTestFixtures,
+    ExpectRequestWorkerFixtures,
+} from './types';
 
-    const requests = new Map<string, Request>();
+export function expectRequestFixturesBuilder(_params: ExpectRequestFixturesBuilderParams = {}) {
+    const expectRequestFixture: TestFixture<
+        ExpectRequestFn,
+        PlaywrightTestOptions & PlaywrightTestArgs
+    > = async ({ page, baseURL }, use) => {
+        if (!baseURL) {
+            throw new Error('Base URL required for requests matching!');
+        }
 
-    page.on('request', (request) => {
-        const url = new URL(request.url());
-        const key = `${url.protocol}//${url.hostname}${url.pathname}`;
+        const requests = new Map<string, Request>();
 
-        requests.set(key, request);
-    });
+        page.on('request', (request) => {
+            const url = new URL(request.url());
+            const key = `${url.protocol}//${url.hostname}${url.pathname}`;
 
-    const boundExpectRequest = expectRequestFn.bind(null, requests);
+            requests.set(key, request);
+        });
 
-    await use(boundExpectRequest);
+        const boundExpectRequest = expectRequestFn.bind(null, requests);
 
-    requests.clear();
-};
+        await use(boundExpectRequest);
 
-const fixtureOptions = {
-    scope: 'test',
-} as const;
+        requests.clear();
+    };
 
-export const expectRequest: [typeof expectRequestFixture, typeof fixtureOptions] = [
-    expectRequestFixture,
-    fixtureOptions,
-];
+    const fixtures: Fixtures<
+        ExpectRequestTestFixtures,
+        ExpectRequestWorkerFixtures,
+        PlaywrightTestArgs & PlaywrightTestOptions,
+        PlaywrightWorkerArgs & PlaywrightWorkerOptions
+    > = {
+        expectRequest: [expectRequestFixture, { scope: 'test' }],
+    };
+
+    return fixtures;
+}

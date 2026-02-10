@@ -100,13 +100,6 @@ export type MockNetworkFixtureBuilderParams = {
     ) => ReturnType<HarLookupResultTransformFunction>;
 
     /**
-     * Allow optionally enable fixture.
-     * Set "enableNetworkMocking" fixture to turn on/off network mocking
-     * @defaultValue false `
-     */
-    optionallyEnabled?: boolean;
-
-    /**
      * Flag to enable or disable adding the x-tests-duplicate-id header for identical requests
      * By default, the header is not added
      * @defaultValue `false`
@@ -114,6 +107,17 @@ export type MockNetworkFixtureBuilderParams = {
     shouldMarkIdenticalRequests?: boolean;
 };
 
-export type OptionallyEnabledTestArgs = {
-    enableNetworkMocking?: boolean;
+export type MockNetworkTestArgs = {
+    isMockingEnabled: boolean;
 };
+export type MockNetworkTestOptions = {
+    enableNetworkMocking: boolean;
+};
+
+export type MockNetworkWorkerArgs = {};
+export type MockNetworkWorkerOptions = {};
+
+export type MockNetworkTestFixtures = MockNetworkTestArgs & MockNetworkTestOptions;
+export type MockNetworkWorkerFixtures = MockNetworkWorkerArgs & MockNetworkWorkerOptions;
+
+export type MockNetworkFixtures = MockNetworkTestFixtures & MockNetworkWorkerFixtures;

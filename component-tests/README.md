@@ -77,14 +77,19 @@ Enhanced mount fixture for Playwright Component Testing that wraps React compone
 Extend `test` in Playwright:
 
 ```ts
-import { mountFixture, type MountFn, TEST_WRAPPER_CLASS } from 'playwright-tools/component-tests';
+import type {
+    MountTestFixtures,
+    MountWorkerFixtures,
+} from 'playwright-tools/component-tests';
+import { mountFixturesBuilder, TEST_WRAPPER_CLASS } from 'playwright-tools/component-tests';
 
-export type TestExtraFixtures = {
-    mount: MountFn;
-};
+export type TestExtraFixtures = MountTestFixtures;
+export type WorkerExtraFixtures = MountWorkerFixtures;
+
+const mountFixtures = mountFixturesBuilder();
 
 export const test = baseTest.extend<TestExtraFixtures, WorkerExtraFixtures>({
-    mount: mountFixture,
+    ...mountFixtures,
 });
 ```
 
