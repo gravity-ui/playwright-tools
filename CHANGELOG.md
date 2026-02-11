@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.0](https://github.com/gravity-ui/playwright-tools/compare/v1.1.3...v2.0.0) (2026-02-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* new fixtures interface will require refactoring in clients using library
+
+### refactor
+
+* changed interface of fixtures ([#58](https://github.com/gravity-ui/playwright-tools/issues/58)) ([4540a06](https://github.com/gravity-ui/playwright-tools/commit/4540a062c4fd124c480d7b8e836413dcfaeae8b4)), closes [#57](https://github.com/gravity-ui/playwright-tools/issues/57)
+
+
+### Features
+
+* expectScreenshot added default locator ([#55](https://github.com/gravity-ui/playwright-tools/issues/55)) ([fe09ebb](https://github.com/gravity-ui/playwright-tools/commit/fe09ebb8ddcf36b1da676269e8397fcea3c5272d)), closes [#51](https://github.com/gravity-ui/playwright-tools/issues/51)
+
+
+### Bug Fixes
+
+* removed default plain name ([#56](https://github.com/gravity-ui/playwright-tools/issues/56)) ([abca542](https://github.com/gravity-ui/playwright-tools/commit/abca54201129a61192807e84ce830710f1ac4a79))
+
 ## [1.1.3](https://github.com/gravity-ui/playwright-tools/compare/v1.1.2...v1.1.3) (2026-01-29)
 
 
