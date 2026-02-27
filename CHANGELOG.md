@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/gravity-ui/playwright-tools/compare/v2.0.0...v2.0.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* onBeforeScreenshot and pause called before each theme screenshot ([#61](https://github.com/gravity-ui/playwright-tools/issues/61)) ([e2553fd](https://github.com/gravity-ui/playwright-tools/commit/e2553fd5265d66f4c60b6db23059d9f51baa70fe))
+
 ## [2.0.0](https://github.com/gravity-ui/playwright-tools/compare/v1.1.3...v2.0.0) (2026-02-11)
 
 
