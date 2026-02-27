@@ -158,11 +158,7 @@ export async function matchScreenshot(
         await page.mouse.move(x, y);
     }
 
-    await onBeforeScreenshot?.(page, combinedOptions);
-
     const slug = shouldPrependSlugToName ? getTestSlug(page) : undefined;
-
-    await page.waitForTimeout(pause);
 
     if (themes && themes.length) {
         for (const theme of themes) {
@@ -171,20 +167,26 @@ export async function matchScreenshot(
             const resolvedName = name ? `${name}-${theme}` : undefined;
 
             await doMatchScreenshot({
+                page,
                 locator,
                 name: resolvedName,
                 slug,
                 options: combinedOptions,
                 soft,
+                onBeforeScreenshot,
+                pause,
             });
         }
     } else {
         await doMatchScreenshot({
+            page,
             locator,
             name,
             slug,
             options: combinedOptions,
             soft,
+            onBeforeScreenshot,
+            pause,
         });
     }
 
@@ -195,13 +197,20 @@ export async function matchScreenshot(
 }
 
 async function doMatchScreenshot(params: {
+    page: Page;
     locator: Locator | Page;
     name?: string;
     slug?: string;
     options: ScreenshotOptions;
     soft: boolean;
+    onBeforeScreenshot?: OnBeforeScreenshotCallback;
+    pause: number;
 }): Promise<void> {
-    const { locator, name, slug, options, soft } = params;
+    const { page, locator, name, slug, options, soft, onBeforeScreenshot, pause } = params;
+
+    await onBeforeScreenshot?.(page, options);
+    await page.waitForTimeout(pause);
+
     const resolvedName = resolveScreenshotName({ name, slug });
     const resolvedExpect = soft ? expect.soft : expect;
 

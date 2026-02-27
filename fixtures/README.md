@@ -118,7 +118,8 @@ type ExpectScreenshotFixtureBuilderParams = {
      */
     hideBySelector?: string[];
     /**
-     * Pause before screenshot (ms)
+     * Pause before each screenshot (ms).
+     * Applied per individual screenshot capture (including each theme).
      * @defaultValue `1000`
      */
     pause?: number;
@@ -138,7 +139,8 @@ type ExpectScreenshotFixtureBuilderParams = {
      */
     themes?: Theme[];
     /**
-     * Callback before taking screenshot. Useful for special stabilizing actions
+     * Callback before taking screenshot. Useful for special stabilizing actions.
+     * Called before each individual screenshot (including each theme when multiple themes are configured).
      * @param page Page current page
      */
     onBeforeScreenshot?: (page: Page, options: ScreenshotOptions) => Promise<void>;
