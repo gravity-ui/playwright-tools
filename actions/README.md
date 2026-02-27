@@ -132,7 +132,8 @@ type MatchScreenshotOptions = {
      */
     themes?: Theme[];
     /**
-     * Callback before taking screenshot. Useful for special stabilizing actions
+     * Callback before taking screenshot. Useful for special stabilizing actions.
+     * Called before each individual screenshot (including each theme when multiple themes are configured).
      * @param page Page current page
      * @param options ScreenshotOptions screenshot options being used
      * @defaultValue globalSettings.matchScreenshot.onBeforeScreenshot
@@ -390,7 +391,8 @@ When reassigning settings, sections are merged, settings per section are also me
          */
         hideBySelector: undefined as string[] | undefined,
         /**
-         * Pause before screenshot (ms)
+         * Pause before each screenshot (ms).
+         * Applied per individual screenshot capture (including each theme).
          */
         pause: 1000,
         /**
@@ -411,7 +413,8 @@ When reassigning settings, sections are merged, settings per section are also me
          */
         themes: undefined as Theme[] | undefined,
         /**
-         * Callback before taking screenshot. Useful for special stabilizing actions
+         * Callback before taking screenshot. Useful for special stabilizing actions.
+         * Called before each individual screenshot (including each theme).
          */
         onBeforeScreenshot: undefined as OnBeforeScreenshotCallback | undefined,
         /**
