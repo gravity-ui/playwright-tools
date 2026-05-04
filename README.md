@@ -17,7 +17,6 @@ import { matchScreenshot } from 'playwright-tools/actions';
 - [component-tests](./component-tests/README.md) — Utilities and fixtures for Playwright Component Testing.
 - [fixtures](./fixtures/README.md) — Fixtures for passing values into tests.
 - [har](./har/README.md) — Functions for working with HAR request dumps.
-- [config](./config/README.md) — Base configuration.
 - [utils](./utils/README.md) — Helper functions.
 
 You can learn more about Playwright and how to configure it in the [Playwright documentation](https://playwright.dev/docs/intro).
@@ -26,4 +25,3 @@ You can learn more about Playwright and how to configure it in the [Playwright d
 
 [@Avol-V](https://github.com/Avol-V)
 [SwinX](https://github.com/SwinX)
-[@vegancat63](https://github.com/vegancat63)
