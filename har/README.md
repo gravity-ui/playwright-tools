@@ -4,6 +4,33 @@ Playwright's built-in request dump mechanism allows you to save all requests exe
 
 All of this allows you to write integration tests for the front-end only, testing the browser code. Disabling the backend with changing data makes tests more stable.
 
+## How it works and which Playwright versions are supported
+
+Reading a dump is implemented inside this package: `initDumps` opens the `.har` / `.har.zip` itself and
+serves the recorded responses through the public `context.route()` / `route.fulfill()` API, using a port of
+Playwright's own request matcher (see `har/vendor`). Recording still uses the public
+`routeFromHAR({update: true})`; the dump Playwright writes is post-processed and only then moved to its
+final path.
+
+Nothing but public Playwright API is used, so the same code runs on every version from **1.23** up.
+Earlier versions do not have `routeFromHAR` at all — the declared peer range `^1.22` is wider than what
+actually works.
+
+The single exception is `Route._redirectNavigationRequest()`, which Playwright itself calls unconditionally
+in its own HAR router. If it ever disappears, replay degrades with a one-time warning: recorded navigation
+redirects are then served in place, so the response body is correct but `page.url()` keeps the pre-redirect
+URL.
+
+Two notes about the record-side hooks, both of which also applied before:
+
+- `addHarRecorderTransform` and `addFlushTransform` run once the dump has been written, i.e. after
+  `context.close()`, not while the test is running. They receive the same `Entry` objects, in the same
+  order, and their result is what lands on disk.
+- Response bodies are stored as separate blobs referenced by `content._file`, so they are not reachable
+  from these hooks. To replace a body you have to `delete entry.response.content._file` **and** set
+  `content.text`; setting `text` alone has never had any effect. Rewriting a body per request is what
+  `addHarLookupTransform`'s `transformResult` is for.
+
 ## Recipes
 
 ### Connecting the Mechanism

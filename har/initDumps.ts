@@ -4,6 +4,7 @@ import { relative, resolve } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 
 import { defaultDumpsFilePathBuilder } from './dumpsFilePathBulders';
+import { installHarEngine } from './engine/installHarEngine';
 
 export type InitDumpsOptions = {
     /**
@@ -100,6 +101,8 @@ export async function initDumps(
     }
 
     console.info(update ? 'Write requests to' : 'Read requests from', harPath);
+
+    installHarEngine(page);
 
     await page.context().routeFromHAR(harPath, {
         update,

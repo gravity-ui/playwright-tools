@@ -1,46 +1,14 @@
-import { getPlaywrightCoreModule } from './getPlaywrightCoreModule';
-import type { Entry } from './types';
+import type { EntryTransformFunction } from './engine/transformRegistry';
+import { registerLegacyTransforms } from './engine/transformRegistry';
 
-export type EntryTransformFunction = (entry: Entry) => void;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function wrapHarRecorderMethods(HarRecorder: any, transform: EntryTransformFunction) {
-    const originalOnEntryFinished = HarRecorder.prototype.onEntryFinished;
-
-    if (originalOnEntryFinished) {
-        // eslint-disable-next-line no-param-reassign
-        HarRecorder.prototype.onEntryFinished = function onEntryFinished(
-            entry: Entry,
-            ...rest: unknown[]
-        ) {
-            if (entry) {
-                transform(entry);
-            }
-
-            return originalOnEntryFinished(entry, rest);
-        };
-    } else {
-        throw new Error('Can\'t find "onEntryFinished" method in "HarRecorder" class.');
-    }
-}
-
-let patchInited = false;
-
-function initHarRecorderPatch(transform: EntryTransformFunction) {
-    patchInited = true;
-
-    const modules = getPlaywrightCoreModule('lib/server/har/harRecorder');
-
-    for (const module of modules) {
-        wrapHarRecorderMethods(module.HarRecorder, transform);
-    }
-}
+export type { EntryTransformFunction } from './engine/transformRegistry';
 
 /**
  * Allows you to make changes to the JSON that will be written to the HAR file
+ *
+ * The transform is applied to every entry of the recorded dump, in document
+ * order, right before it is written to its final location.
  */
 export function addHarRecorderTransform(transform: EntryTransformFunction) {
-    if (!patchInited) {
-        initHarRecorderPatch(transform);
-    }
+    registerLegacyTransforms('recorder', { recorder: transform });
 }
