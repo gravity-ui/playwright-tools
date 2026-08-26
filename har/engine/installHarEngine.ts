@@ -3,6 +3,7 @@ import type { BrowserContext, Page } from '@playwright/test';
 import type { HarPostProcessTask } from './harPostProcessor';
 import { postProcessHarDump } from './harPostProcessor';
 import { installHarReplay } from './harReplayEngine';
+import { tryNativeHarReplay } from './nativeHarReplay';
 
 const ENGINE_INSTALLED = Symbol.for('@gravity-ui/playwright-tools/har-engine-installed');
 const CLOSE_HOOKED = Symbol.for('@gravity-ui/playwright-tools/har-close-hooked');
@@ -11,8 +12,9 @@ type RouteFromHAR = BrowserContext['routeFromHAR'];
 type RouteFromHAROptions = NonNullable<Parameters<RouteFromHAR>[1]>;
 
 type Patchable = Record<string | symbol, unknown>;
+type CloseTask = () => Promise<void>;
 
-const pendingTasks = new WeakMap<BrowserContext, HarPostProcessTask[]>();
+const pendingTasks = new WeakMap<BrowserContext, CloseTask[]>();
 
 /**
  * Playwright writes the recording to this path, we post-process it into the
@@ -29,7 +31,7 @@ function contextOf(target: Page | BrowserContext): BrowserContext {
     return typeof page.context === 'function' ? page.context() : (target as BrowserContext);
 }
 
-function scheduleHarPostProcessing(context: BrowserContext, task: HarPostProcessTask) {
+function onContextClose(context: BrowserContext, task: CloseTask) {
     const tasks = pendingTasks.get(context) ?? [];
 
     tasks.push(task);
@@ -57,9 +59,13 @@ function scheduleHarPostProcessing(context: BrowserContext, task: HarPostProcess
         pendingTasks.delete(context);
 
         for (const scheduledTask of scheduled) {
-            await postProcessHarDump(scheduledTask);
+            await scheduledTask();
         }
     };
+}
+
+function scheduleHarPostProcessing(context: BrowserContext, task: HarPostProcessTask) {
+    onContextClose(context, () => postProcessHarDump(task));
 }
 
 function wrapRouteFromHAR(prototype: Patchable) {
@@ -91,6 +97,23 @@ function wrapRouteFromHAR(prototype: Patchable) {
             return;
         }
 
+        // Preferred: Playwright replays the dump itself, so request matching and
+        // response timing stay exactly as they are without this package.
+        const native = await tryNativeHarReplay(
+            this,
+            original as unknown as (har: string, options: Record<string, unknown>) => Promise<void>,
+            har,
+            options as Record<string, unknown>,
+        );
+
+        if (native) {
+            if (native.cleanup) {
+                onContextClose(contextOf(this), native.cleanup);
+            }
+
+            return;
+        }
+
         await installHarReplay(this, har, { notFound: options.notFound, url: options.url });
     } as unknown as RouteFromHAR;
 
@@ -100,7 +123,7 @@ function wrapRouteFromHAR(prototype: Patchable) {
 
 /**
  * Routes every `routeFromHAR` call of this worker through the engine of this
- * package: userland replay for reading, post-processing for recording.
+ * package: transform-aware replay for reading, post-processing for recording.
  *
  * Only public Playwright API is wrapped, so it survives any internal refactoring.
  */

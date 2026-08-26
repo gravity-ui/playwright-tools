@@ -6,20 +6,25 @@ All of this allows you to write integration tests for the front-end only, testin
 
 ## How it works and which Playwright versions are supported
 
-Reading a dump is implemented inside this package: `initDumps` opens the `.har` / `.har.zip` itself and
-serves the recorded responses through the public `context.route()` / `route.fulfill()` API, using a port of
-Playwright's own request matcher (see `har/vendor`). Recording still uses the public
-`routeFromHAR({update: true})`; the dump Playwright writes is post-processed and only then moved to its
-final path.
+Both reading and recording go through the public `routeFromHAR()`; this package only wraps it.
 
-Nothing but public Playwright API is used, so the same code runs on every version from **1.23** up.
-Earlier versions do not have `routeFromHAR` at all — the declared peer range `^1.22` is wider than what
-actually works.
+- **Replay.** Playwright itself matches the requests and serves the responses, so request matching and
+  response timing are exactly what they would be without this package. The transforms are attached around
+  it: `addHarOpenTransform` is applied by handing Playwright an already-rewritten copy of the dump, and
+  `addHarLookupTransform` wraps the client-side `LocalUtils.harLookup` the HAR router calls.
+- **Recording.** `routeFromHAR({update: true})` writes into a temporary path; the record-side transforms
+  are applied to the written dump, which is only then moved to its final location.
 
-The single exception is `Route._redirectNavigationRequest()`, which Playwright itself calls unconditionally
-in its own HAR router. If it ever disappears, replay degrades with a one-time warning: recorded navigation
-redirects are then served in place, so the response body is correct but `page.url()` keeps the pre-redirect
-URL.
+If the lookup seam is unavailable — Playwright older than **1.55**, or a thin client where `LocalUtils`
+is out of process — the package falls back to replaying the dump itself, through `context.route()` /
+`route.fulfill()` with a port of Playwright's own matcher (see `har/vendor`). The fallback is functionally
+equivalent, but it delivers responses with a different latency profile, which can change the order in which
+the application under test issues follow-up requests. A dump that relies on request headers (`referer` and
+the like) to disambiguate two otherwise identical recorded requests may therefore match a different entry.
+Every fallback is announced once per process with a `HAR engine degraded (...)` warning.
+
+The oldest supported version is **1.23** — earlier ones have no `routeFromHAR` at all, so the declared peer
+range `^1.22` is wider than what actually works.
 
 Two notes about the record-side hooks, both of which also applied before:
 
