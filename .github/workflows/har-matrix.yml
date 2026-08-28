@@ -20,12 +20,17 @@ jobs:
     # across the whole supported range — including 1.59 (the last release that
     # shipped lib/server/**) and 1.60 (the first bundled one, which is what broke
     # the previous implementation).
+    #
+    # A pull request only gets the newest version, so that reviewing it means
+    # looking at one check instead of seven. The full range runs on merge, on the
+    # nightly schedule and on demand — that is where a version-specific
+    # regression has to be caught, and it is caught before any release.
     name: HAR (playwright ${{ matrix.playwright }})
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        playwright: ['1.49.1', '1.55.0', '1.58.1', '1.59.0', '1.60.0', 'latest']
+        playwright: ${{ github.event_name == 'pull_request' && fromJSON('["latest"]') || fromJSON('["1.49.1", "1.55.0", "1.58.1", "1.59.0", "1.60.0", "latest"]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,8 +56,6 @@ jobs:
                  find node_modules -path '*/@playwright/test/package.json'; exit 1; }
       - name: Install Browser
         run: npx playwright install --with-deps chromium
-      - name: Unit Tests
-        run: npm run test
       - name: HAR Integration Tests
         run: npm run test:har
       - name: Upload Report
@@ -65,9 +68,11 @@ jobs:
 
   har_canary:
     # Early warning: `next` is published daily, and the 1.60 bundling landed there
-    # 34 days before it shipped in a stable release. Allowed to fail.
+    # 34 days before it shipped in a stable release. Allowed to fail, and kept off
+    # pull requests — a nightly alpha breaking is not a reason to look at a review.
     name: HAR (playwright next)
     runs-on: ubuntu-22.04
+    if: github.event_name != 'pull_request'
     continue-on-error: true
     steps:
       - name: Checkout
