@@ -1,8 +1,15 @@
 name: HAR Playwright Matrix
 
+# A released Playwright version cannot change its behaviour, so re-running the
+# engine against the frozen ones is only informative when something moves:
+#
+#   - the mechanism changes    -> a pull request touching the paths below, which
+#                                 also covers adding a version to the matrix
+#   - a new version appears    -> the nightly run, which only tests the moving
+#                                 targets (`latest` and `next`)
+#
+# Everything else would be re-proving the same result.
 on:
-  push:
-    branches: [main, next]
   pull_request:
     paths:
       - 'har/**'
@@ -10,7 +17,6 @@ on:
       - 'tests/har/**'
       - '.github/workflows/har-matrix.yml'
   schedule:
-    # Nightly, to notice a Playwright change before it reaches a release.
     - cron: '0 3 * * *'
   workflow_dispatch:
 
@@ -21,16 +27,15 @@ jobs:
     # shipped lib/server/**) and 1.60 (the first bundled one, which is what broke
     # the previous implementation).
     #
-    # A pull request only gets the newest version, so that reviewing it means
-    # looking at one check instead of seven. The full range runs on merge, on the
-    # nightly schedule and on demand — that is where a version-specific
-    # regression has to be caught, and it is caught before any release.
+    # The full range runs when the mechanism changes, i.e. on a pull request that
+    # touches it. The nightly run only needs `latest`: the frozen versions cannot
+    # start behaving differently on their own.
     name: HAR (playwright ${{ matrix.playwright }})
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        playwright: ${{ github.event_name == 'pull_request' && fromJSON('["latest"]') || fromJSON('["1.49.1", "1.55.0", "1.58.1", "1.59.0", "1.60.0", "latest"]') }}
+        playwright: ${{ github.event_name == 'pull_request' && fromJSON('["1.49.1", "1.55.0", "1.58.1", "1.59.0", "1.60.0", "latest"]') || fromJSON('["latest"]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,9 +72,9 @@ jobs:
           retention-days: 7
 
   har_canary:
-    # Early warning: `next` is published daily, and the 1.60 bundling landed there
-    # 34 days before it shipped in a stable release. Allowed to fail, and kept off
-    # pull requests — a nightly alpha breaking is not a reason to look at a review.
+    # The other moving target. `next` is published daily, and the 1.60 bundling
+    # landed there 34 days before it shipped in a stable release. Allowed to fail,
+    # and kept off pull requests — a broken nightly alpha is not a review comment.
     name: HAR (playwright next)
     runs-on: ubuntu-22.04
     if: github.event_name != 'pull_request'
