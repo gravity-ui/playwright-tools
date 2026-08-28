@@ -1,7 +1,9 @@
 import { TEST_WRAPPER_CLASS } from '../../component-tests/fixtures';
 import { expect, test } from '../test';
 
-import { ComplexComponent, TestComponent } from './components/TestComponent';
+import { ComplexComponent } from './components/ComplexComponent';
+import { StatefulComponent } from './components/StatefulComponent';
+import { TestComponent } from './components/TestComponent';
 
 test.describe('Mount Fixture Integration Tests', () => {
     test('should mount a basic component', async ({ mount }) => {
@@ -77,5 +79,16 @@ test.describe('Mount Fixture Integration Tests', () => {
         await expect(component.getByRole('heading')).toContainText('Title');
         await expect(component.getByRole('button')).toContainText('Click me');
         await expect(component.getByRole('listitem')).toHaveCount(2);
+    });
+
+    test('should update a stateful component', async ({ mount }) => {
+        const component = await mount(<StatefulComponent text="Count" />);
+        await expect(component.getByText('Count: 0')).toBeVisible();
+
+        await component.getByRole('button').click();
+        await expect(component.getByText('Count: 1')).toBeVisible();
+
+        await component.update(<StatefulComponent text="Tries" />);
+        await expect(component.getByText('Tries: 1')).toBeVisible();
     });
 });
