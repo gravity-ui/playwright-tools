@@ -99,6 +99,8 @@ jobs:
             }
           done
       - name: Install Browser
-        run: npx playwright install --with-deps chromium
+        # Not `npx`: dropping the component-testing packages takes the bin shim
+        # with it, and npx then tries to fetch `playwright` from the registry.
+        run: node node_modules/playwright/cli.js install --with-deps chromium
       - name: HAR Integration Tests
         run: npm run test:har
