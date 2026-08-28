@@ -1,0 +1,84 @@
+name: HAR Playwright Matrix
+
+on:
+  push:
+    branches: [main, next]
+  pull_request:
+    paths:
+      - 'har/**'
+      - 'fixtures/mock-network/**'
+      - 'tests/har/**'
+      - '.github/workflows/har-matrix.yml'
+  schedule:
+    # Nightly, to notice a Playwright change before it reaches a release.
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  har_matrix:
+    # The HAR engine only uses public Playwright API, so it has to keep working
+    # across the whole supported range — including 1.59 (the last release that
+    # shipped lib/server/**) and 1.60 (the first bundled one, which is what broke
+    # the previous implementation).
+    name: HAR (playwright ${{ matrix.playwright }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        playwright: ['1.49.1', '1.55.0', '1.58.1', '1.59.0', '1.60.0', 'latest']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - name: Install Packages
+        run: npm ci
+      - name: Pin Playwright
+        run: |
+          npm install --no-save --no-package-lock \
+            "@playwright/test@${{ matrix.playwright }}" \
+            "playwright@${{ matrix.playwright }}" \
+            "playwright-core@${{ matrix.playwright }}"
+          node -e "console.log('playwright-core', require('playwright-core/package.json').version)"
+      - name: Install Browser
+        run: npx playwright install --with-deps chromium
+      - name: Unit Tests
+        run: npm run test
+      - name: HAR Integration Tests
+        run: npm run test:har
+      - name: Upload Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: har-report-${{ matrix.playwright }}
+          path: playwright-report-har
+          retention-days: 7
+
+  har_canary:
+    # Early warning: `next` is published daily, and the 1.60 bundling landed there
+    # 34 days before it shipped in a stable release. Allowed to fail.
+    name: HAR (playwright next)
+    runs-on: ubuntu-22.04
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - name: Install Packages
+        run: npm ci
+      - name: Pin Playwright
+        run: |
+          npm install --no-save --no-package-lock \
+            "@playwright/test@next" "playwright@next" "playwright-core@next"
+          node -e "console.log('playwright-core', require('playwright-core/package.json').version)"
+      - name: Install Browser
+        run: npx playwright install --with-deps chromium
+      - name: HAR Integration Tests
+        run: npm run test:har

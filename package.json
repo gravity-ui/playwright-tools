@@ -72,6 +72,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint --ext .ts ./",
     "test": "jest --colors --config=jest.config.js",
+    "test:har": "playwright test --config=tests/har/playwright.config.ts",
+    "test:har:install": "playwright install chromium --with-deps",
     "test:integration": "playwright test --config=tests/playwright.config.ts",
     "test:integration:install": "playwright install chromium --with-deps",
     "test:integration:update": "npm run test:integration -- -u",
