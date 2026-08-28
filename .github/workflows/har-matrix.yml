@@ -81,10 +81,20 @@ jobs:
         run: npm ci
       - name: Pin Playwright
         run: |
+          # The `next` tags of the component-testing package and of the runner
+          # can point at different nightlies, so resolve one version and pin all
+          # of them to it — two copies of @playwright/test collect no tests.
+          version="$(npm view @playwright/test@next version)"
+          echo "resolved next: $version"
           npm install --no-save --no-package-lock \
-            "@playwright/test@next" "playwright@next" "playwright-core@next" \
-            "@playwright/experimental-ct-react@next"
+            "@playwright/test@$version" \
+            "playwright@$version" \
+            "playwright-core@$version" \
+            "@playwright/experimental-ct-react@$version"
           node -e "console.log('playwright-core', require('playwright-core/package.json').version)"
+          test "$(find node_modules -path '*/@playwright/test/package.json' | wc -l)" -eq 1 \
+            || { echo 'More than one @playwright/test in the tree'; \
+                 find node_modules -path '*/@playwright/test/package.json'; exit 1; }
       - name: Install Browser
         run: npx playwright install --with-deps chromium
       - name: HAR Integration Tests
