@@ -26,9 +26,10 @@ type RouteWithRedirect = Route & {
 };
 
 /**
- * Playwright's own HAR router folds the header array into an object and joins
- * repeated `set-cookie` values with a newline, which the browser side splits
- * back apart. Reproduced here verbatim.
+ * `route.fulfill` takes a headers object, so repeated headers must be folded into
+ * one key. Playwright's own HAR router folds with `Object.fromEntries`, which drops
+ * every `set-cookie` but the last; joining them with a newline instead keeps all of
+ * them, because the Chromium and Firefox fulfill paths split that value back apart.
  */
 function toFulfillHeaders(headers: Header[]): Record<string, string> {
     const result: Record<string, string> = {};

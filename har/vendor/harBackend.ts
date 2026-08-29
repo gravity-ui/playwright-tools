@@ -63,6 +63,22 @@ function multipartBoundary(headers: Header[]) {
     return boundary?.[1];
 }
 
+/**
+ * The method a recorded redirect is followed with: 301/302 downgrade a POST to a
+ * GET, 303 downgrades everything but GET/HEAD. Any other method is kept as is.
+ */
+function redirectMethod(status: number, method: string) {
+    if ((status === 301 || status === 302) && method === 'POST') {
+        return 'GET';
+    }
+
+    if (status === 303 && !['GET', 'HEAD'].includes(method)) {
+        return 'GET';
+    }
+
+    return method;
+}
+
 export class HarBackend {
     static async open(file: string): Promise<HarBackend> {
         if (file.endsWith('.zip')) {
@@ -250,14 +266,7 @@ export class HarBackend {
 
             if (REDIRECT_STATUS.includes(entry.response.status) && locationHeader) {
                 currentUrl = new URL(locationHeader.value, currentUrl).toString();
-
-                if (
-                    ((entry.response.status === 301 || entry.response.status === 302) &&
-                        currentMethod === 'POST') ||
-                    (entry.response.status === 303 && !['GET', 'HEAD'].includes(currentMethod))
-                ) {
-                    currentMethod = 'GET';
-                }
+                currentMethod = redirectMethod(entry.response.status, currentMethod);
 
                 continue;
             }

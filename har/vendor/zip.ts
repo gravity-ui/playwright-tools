@@ -1,3 +1,9 @@
+/**
+ * NOT derived from Playwright: an original minimal ZIP reader/writer for HAR
+ * archives, licensed under this package's MIT license like the rest of the repo.
+ * Playwright's own HAR archives are produced by `zipBundle` (yazl/yauzl), which
+ * is not vendored here. Re-syncing `vendor/` against upstream must skip this file.
+ */
 /* eslint-disable no-bitwise -- binary format parsing and CRC-32 need bit arithmetic */
 import { readFile, writeFile } from 'node:fs/promises';
 import { deflateRawSync, inflateRawSync } from 'node:zlib';

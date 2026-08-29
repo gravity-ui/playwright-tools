@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 
@@ -10,13 +10,6 @@ import { readZipEntries, writeZipEntries } from '../vendor/zip';
 
 import { degrade } from './diagnostics';
 import { getHarTransforms } from './transformRegistry';
-
-/**
- * Playwright's client-side `HarRouter` started calling the `LocalUtils.harLookup`
- * wrapper method (instead of the raw channel) in 1.55. Below that version the
- * wrapper is not on the call path and patching it would silently do nothing.
- */
-const MIN_LOOKUP_SEAM_VERSION = [1, 55];
 
 const LOOKUP_PATCHED = Symbol.for('@gravity-ui/playwright-tools/har-lookup-patched');
 
@@ -32,22 +25,11 @@ type ConnectionOwner = {
     };
 };
 
-function playwrightVersionIsAtLeast([major, minor]: number[]): boolean {
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require, import/no-extraneous-dependencies -- peer dependency, read lazily
-        const { version } = require('playwright-core/package.json') as { version: string };
-        const parts = version.split('.').map(Number);
-
-        if (parts.length < 2 || parts.some(Number.isNaN)) {
-            return false;
-        }
-
-        return parts[0]! > major! || (parts[0] === major && parts[1]! >= minor!);
-    } catch {
-        return false;
-    }
-}
-
+/**
+ * `LocalUtils.harLookup` is the seam the client-side `HarRouter` calls; it exists
+ * since Playwright 1.51 (before that the router went through the raw channel) and
+ * is out of process for a thin client. Probing the method covers both cases.
+ */
 function getLocalUtils(target: Page | BrowserContext): LocalUtils | undefined {
     try {
         const localUtils = (target as unknown as ConnectionOwner)._connection?.localUtils?.();
@@ -141,8 +123,6 @@ async function prepareHarFile(
 
         harFile = JSON.parse(content.toString('utf8')) as HARFile;
     } else {
-        const { readFile } = await import('node:fs/promises');
-
         harFile = JSON.parse(await readFile(file, 'utf8')) as HARFile;
     }
 
@@ -153,10 +133,23 @@ async function prepareHarFile(
     return {
         path,
         cleanup: async () => {
-            await rm(file.endsWith('.zip') ? dirname(path) : path, {
-                force: true,
-                recursive: true,
-            });
+            try {
+                // `harRouter.dispose()` fires `harClose` without awaiting it, so the
+                // backend may still hold the temporary zip open right after
+                // `context.close()` resolves. Retry, and never fail the test over a
+                // scratch file that could not be removed.
+                await rm(file.endsWith('.zip') ? dirname(path) : path, {
+                    force: true,
+                    recursive: true,
+                    maxRetries: 3,
+                });
+            } catch (error) {
+                degrade(
+                    'temp-copy-not-removed',
+                    'Could not remove the temporary copy of the dump ' +
+                        `at ${path}: ${(error as Error).message}`,
+                );
+            }
         },
     };
 }
@@ -177,22 +170,12 @@ export async function tryNativeHarReplay(
     file: string,
     options: Record<string, unknown>,
 ): Promise<NativeReplayResult> {
-    if (!playwrightVersionIsAtLeast(MIN_LOOKUP_SEAM_VERSION)) {
-        degrade(
-            'no-native-lookup-seam',
-            'This Playwright version does not route HAR lookups through LocalUtils.harLookup. ' +
-                'Falling back to the built-in replay engine.',
-        );
-
-        return undefined;
-    }
-
     const localUtils = getLocalUtils(target);
 
     if (!localUtils) {
         degrade(
-            'no-local-utils',
-            'Playwright LocalUtils is not reachable (thin client?). ' +
+            'no-lookup-seam',
+            'LocalUtils.harLookup is not reachable (Playwright older than 1.51, or a thin client). ' +
                 'Falling back to the built-in replay engine.',
         );
 
@@ -203,7 +186,13 @@ export async function tryNativeHarReplay(
 
     const { path, cleanup } = await prepareHarFile(file);
 
-    await routeFromHAR.call(target, path, options);
+    try {
+        await routeFromHAR.call(target, path, options);
+    } catch (error) {
+        await cleanup?.();
+
+        throw error;
+    }
 
     return { cleanup };
 }

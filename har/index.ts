@@ -11,8 +11,6 @@ export type { FlushTransformFunction } from './addFlushTransform';
 export { addFlushTransform } from './addFlushTransform';
 export { clearHeaders } from './clearHeaders';
 export { installHarEngine } from './engine/installHarEngine';
-export type { HarTransformSlots } from './engine/transformRegistry';
-export { resetHarTransforms, setFixtureHarTransforms } from './engine/transformRegistry';
 export type { InitDumpsOptions } from './initDumps';
 export { initDumps } from './initDumps';
 export { replaceBaseUrlInEntry } from './replaceBaseUrlInEntry';

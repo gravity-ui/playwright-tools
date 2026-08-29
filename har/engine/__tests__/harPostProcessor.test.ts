@@ -9,7 +9,7 @@ import { readZipEntries, writeZipEntries } from '../../vendor/zip';
 import { postProcessHarDump } from '../harPostProcessor';
 import { resetHarTransforms, setFixtureHarTransforms } from '../transformRegistry';
 
-function makeEntry(url: string, blob?: string): Entry {
+function makeEntry(url: string, blob?: string, postBlob?: string): Entry {
     return {
         startedDateTime: '2026-01-01T00:00:00.000Z',
         time: 1,
@@ -20,6 +20,7 @@ function makeEntry(url: string, blob?: string): Entry {
             cookies: [],
             headers: [{ name: 'cookie', value: 'secret=1' }],
             queryString: [],
+            postData: postBlob ? { mimeType: 'application/json', _file: postBlob } : undefined,
             headersSize: -1,
             bodySize: -1,
         },
@@ -114,9 +115,11 @@ describe('postProcessHarDump', () => {
 
         setFixtureHarTransforms({
             recorder: (entry) => {
+                // eslint-disable-next-line no-param-reassign -- transforms mutate the entry in place
                 entry.request.headers = entry.request.headers.filter(
                     (header) => header.name.toLowerCase() !== 'cookie',
                 );
+                // eslint-disable-next-line no-param-reassign -- transforms mutate the entry in place
                 entry.request.url = entry.request.url.replace(
                     'https://example.test',
                     'https://base.url.placeholder',
@@ -166,10 +169,15 @@ describe('postProcessHarDump', () => {
     it('drops blobs orphaned by the flush transform', async () => {
         const { source, target } = await writeArchive(
             [
-                makeEntry('https://example.test/keep', 'keep-blob'),
-                makeEntry('https://example.test/drop', 'drop-blob'),
+                makeEntry('https://example.test/keep', 'keep-blob', 'keep-post-blob'),
+                makeEntry('https://example.test/drop', 'drop-blob', 'drop-post-blob'),
             ],
-            { 'keep-blob': 'kept', 'drop-blob': 'dropped' },
+            {
+                'keep-blob': 'kept',
+                'drop-blob': 'dropped',
+                'keep-post-blob': 'kept-post',
+                'drop-post-blob': 'dropped-post',
+            },
         );
 
         setFixtureHarTransforms({
@@ -180,8 +188,13 @@ describe('postProcessHarDump', () => {
 
         const { members } = await readArchivedHar(target);
 
-        expect([...members.keys()].sort()).toStrictEqual(['har.har', 'keep-blob']);
+        expect([...members.keys()].sort()).toStrictEqual([
+            'har.har',
+            'keep-blob',
+            'keep-post-blob',
+        ]);
         expect(members.get('keep-blob')!.toString('utf8')).toBe('kept');
+        expect(members.get('keep-post-blob')!.toString('utf8')).toBe('kept-post');
     });
 
     it('post-processes an uncompressed dump in place of the recording', async () => {
@@ -196,6 +209,7 @@ describe('postProcessHarDump', () => {
 
         setFixtureHarTransforms({
             recorder: (entry) => {
+                // eslint-disable-next-line no-param-reassign -- transforms mutate the entry in place
                 entry.request.url = 'https://base.url.placeholder/a';
             },
         });

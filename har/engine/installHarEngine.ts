@@ -1,5 +1,6 @@
 import type { BrowserContext, Page } from '@playwright/test';
 
+import { degrade } from './diagnostics';
 import type { HarPostProcessTask } from './harPostProcessor';
 import { postProcessHarDump } from './harPostProcessor';
 import { installHarReplay } from './harReplayEngine';
@@ -7,6 +8,9 @@ import { tryNativeHarReplay } from './nativeHarReplay';
 
 const ENGINE_INSTALLED = Symbol.for('@gravity-ui/playwright-tools/har-engine-installed');
 const CLOSE_HOOKED = Symbol.for('@gravity-ui/playwright-tools/har-close-hooked');
+
+/** Identifies this copy of the package: a foreign token means another copy owns the engine. */
+const INSTALL_TOKEN = {};
 
 type RouteFromHAR = BrowserContext['routeFromHAR'];
 type RouteFromHAROptions = NonNullable<Parameters<RouteFromHAR>[1]>;
@@ -47,7 +51,7 @@ function onContextClose(context: BrowserContext, task: CloseTask) {
 
     const originalClose = context.close.bind(context);
 
-    context.close = async (options?: Parameters<BrowserContext['close']>[0]) => {
+    const closeOnce = async (options?: Parameters<BrowserContext['close']>[0]) => {
         await originalClose(options);
 
         const scheduled = pendingTasks.get(context);
@@ -62,6 +66,17 @@ function onContextClose(context: BrowserContext, task: CloseTask) {
             await scheduledTask();
         }
     };
+
+    // Playwright's own `close` returns immediately while a first close is still
+    // exporting the HAR, so a concurrent second call must not run the tasks.
+    let closing: Promise<void> | undefined;
+
+    // eslint-disable-next-line no-param-reassign -- intentional instance patching
+    context.close = async (options?: Parameters<BrowserContext['close']>[0]) => {
+        closing ??= closeOnce(options);
+
+        await closing;
+    };
 }
 
 function scheduleHarPostProcessing(context: BrowserContext, task: HarPostProcessTask) {
@@ -69,7 +84,18 @@ function scheduleHarPostProcessing(context: BrowserContext, task: HarPostProcess
 }
 
 function wrapRouteFromHAR(prototype: Patchable) {
-    if (prototype[ENGINE_INSTALLED]) {
+    const installed = prototype[ENGINE_INSTALLED];
+
+    if (installed) {
+        if (installed !== INSTALL_TOKEN) {
+            degrade(
+                'duplicate-package-copy',
+                'Another copy of @gravity-ui/playwright-tools already installed the HAR engine ' +
+                    'in this worker; transforms registered through this copy are ignored. ' +
+                    'Deduplicate the dependency.',
+            );
+        }
+
         return;
     }
 
@@ -77,11 +103,12 @@ function wrapRouteFromHAR(prototype: Patchable) {
 
     if (typeof original !== 'function') {
         throw new Error(
-            '[@gravity-ui/playwright-tools] Cannot find the public "routeFromHAR" method. ' +
+            'Can\'t find "routeFromHAR" method in Playwright API. ' +
                 'Playwright >= 1.23 is required for HAR dumps.',
         );
     }
 
+    // eslint-disable-next-line no-param-reassign -- intentional prototype monkey-patching
     prototype.routeFromHAR = async function routeFromHAR(
         this: Page | BrowserContext,
         har: string,
@@ -118,7 +145,8 @@ function wrapRouteFromHAR(prototype: Patchable) {
     } as unknown as RouteFromHAR;
 
     // Latched only after the patch has actually been applied.
-    prototype[ENGINE_INSTALLED] = true;
+    // eslint-disable-next-line no-param-reassign -- intentional prototype monkey-patching
+    prototype[ENGINE_INSTALLED] = INSTALL_TOKEN;
 }
 
 /**

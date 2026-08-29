@@ -6,6 +6,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
     testDir: './',
     testMatch: '*.test.ts{,x}',
+    // The HAR engine has its own plain (non component-testing) config.
+    testIgnore: 'har/**',
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,

@@ -55,13 +55,17 @@ function innerJsonStringify(
     }
 
     const childIndent = `${indent}  `;
-    const brackets = isArray
-        ? flat
+    let brackets: { open: string; close: string };
+
+    if (isArray) {
+        brackets = flat
             ? { open: '[', close: ']' }
-            : { open: `[\n${childIndent}`, close: `\n${indent}]` }
-        : flat
-          ? { open: '{ ', close: ' }' }
-          : { open: `{\n${childIndent}`, close: `\n${indent}}` };
+            : { open: `[\n${childIndent}`, close: `\n${indent}]` };
+    } else {
+        brackets = flat
+            ? { open: '{ ', close: ' }' }
+            : { open: `{\n${childIndent}`, close: `\n${indent}}` };
+    }
 
     tokens.push(brackets.open);
 

@@ -28,6 +28,7 @@ function applyTransforms(harFile: HARFile): boolean {
     }
 
     if (flush) {
+        // eslint-disable-next-line no-param-reassign -- the parsed dump is mutated in place
         harFile.log.entries = flush(harFile.log.entries);
     }
 
@@ -107,11 +108,19 @@ async function postProcessPlain({ sourcePath, targetPath }: HarPostProcessTask) 
 export async function postProcessHarDump(task: HarPostProcessTask): Promise<void> {
     await mkdir(dirname(task.targetPath), { recursive: true });
 
-    if (task.sourcePath.endsWith('.zip')) {
-        await postProcessZip(task);
+    try {
+        if (task.sourcePath.endsWith('.zip')) {
+            await postProcessZip(task);
 
-        return;
+            return;
+        }
+
+        await postProcessPlain(task);
+    } catch (error) {
+        // The recording still holds the unscrubbed headers the transforms were
+        // supposed to remove — never leave it next to the dump.
+        await rm(task.sourcePath, { force: true });
+
+        throw error;
     }
-
-    await postProcessPlain(task);
 }

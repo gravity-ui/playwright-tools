@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -90,7 +90,7 @@ describe('zip', () => {
     it('rejects a file that is not an archive', async () => {
         const file = join(directory, 'not-a-zip.har');
 
-        await writeZipEntries(join(directory, 'placeholder.zip'), new Map());
-        await expect(readZipEntries(file)).rejects.toThrow();
+        await writeFile(file, '{"log":{"entries":[]}}', 'utf8');
+        await expect(readZipEntries(file)).rejects.toThrow('Not a ZIP archive');
     });
 });

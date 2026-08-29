@@ -14,6 +14,7 @@ export function degrade(code: string, message: string): void {
     console.warn(`[@gravity-ui/playwright-tools] HAR engine degraded (${code}): ${message}`);
 }
 
+/** Test seam: forgets reported degradations so that warnings fire again. */
 export function resetDegradations(): void {
     reported.clear();
 }
