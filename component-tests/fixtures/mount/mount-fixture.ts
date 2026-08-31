@@ -40,7 +40,13 @@ export function mountFixturesBuilder(_params: MountFixturesBuilderParams = {}) {
 
             const wrapper = createComponentWrapper(component, { width, rootStyle });
 
-            return await baseMount(wrapper, baseMountOptions);
+            const result = await baseMount(wrapper, baseMountOptions);
+            const baseUpdate = result.update.bind(result);
+
+            result.update = (nextComponent) =>
+                baseUpdate(createComponentWrapper(nextComponent, { width, rootStyle }));
+
+            return result;
         };
 
         await use(mount);
