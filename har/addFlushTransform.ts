@@ -1,3 +1,4 @@
+import { installLegacyHarTransform } from './engine/legacyHarEngine';
 import type { FlushTransformFunction } from './engine/transformRegistry';
 import { registerLegacyTransforms } from './engine/transformRegistry';
 
@@ -11,4 +12,5 @@ export type { FlushTransformFunction } from './engine/transformRegistry';
  */
 export function addFlushTransform(transform: FlushTransformFunction) {
     registerLegacyTransforms('flush', { flush: transform });
+    installLegacyHarTransform('flush');
 }

@@ -6,18 +6,18 @@ All of this allows you to write integration tests for the front-end only, testin
 
 ## How it works and which Playwright versions are supported
 
-Both reading and recording go through the public `routeFromHAR()`; this package only wraps it.
+The implementation has two tiers so that already released Playwright versions keep their historical behaviour:
 
-- **Replay.** Playwright itself matches the requests and serves the responses, so request matching and response timing are exactly what they would be without this package. The transforms are attached around it: `addHarOpenTransform` is applied by handing Playwright an already-rewritten copy of the dump, and `addHarLookupTransform` wraps the client-side `LocalUtils.harLookup` the HAR router calls.
-- **Recording.** `routeFromHAR({update: true})` writes into a temporary path; the record-side transforms are applied to the written dump, which is only then moved to its final location.
+- **Playwright 1.23–1.59.** The `add*Transform` functions patch Playwright's `HarRecorder` and `LocalUtilsDispatcher`, as previous releases of this package did. This preserves Playwright's own request matching and response timing and also covers `recordHar`, `tracing.startHar` and direct `routeFromHAR()` calls.
+- **Playwright 1.60 and newer.** Playwright no longer ships those internal modules, so the package wraps the public `routeFromHAR()` API. Replay still uses Playwright's matcher when its client-side `LocalUtils.harLookup` seam is reachable. Recording uses a temporary path and applies the record-side transforms before moving the finished dump to its final location.
 
-If the lookup seam is unavailable — Playwright older than **1.51**, whose `HarRouter` still went through the raw channel, or a thin client where `LocalUtils` is out of process — the package falls back to replaying the dump itself, through `context.route()` / `route.fulfill()` with a port of Playwright's own matcher (see `har/vendor`). The fallback is functionally equivalent, but it delivers responses with a different latency profile, which can change the order in which the application under test issues follow-up requests. A dump that relies on request headers (`referer` and the like) to disambiguate two otherwise identical recorded requests may therefore match a different entry. Every fallback is announced once per process with a `HAR engine degraded (...)` warning.
+On the public-API tier, a thin client whose `LocalUtils` is out of process falls back to replaying the dump through `context.route()` / `route.fulfill()` with a port of Playwright's own matcher (see `har/vendor`). The fallback is functionally equivalent, but it delivers responses with a different latency profile, which can change the order in which the application under test issues follow-up requests. A dump that relies on request headers (`referer` and the like) to disambiguate two otherwise identical recorded requests may therefore match a different entry. Every fallback is announced once per process with a `HAR engine degraded (...)` warning.
 
 The oldest supported version is **1.23** — earlier ones have no `routeFromHAR` at all, so the declared peer range `^1.22` is wider than what actually works.
 
-Two notes about the record-side hooks, both of which also applied before:
+Two notes about the record-side hooks:
 
-- `addHarRecorderTransform` and `addFlushTransform` run once the dump has been written, i.e. after `context.close()`, not while the test is running. They receive the same `Entry` objects, in the same order, and their result is what lands on disk.
+- On Playwright 1.23–1.59, `addHarRecorderTransform` runs as each entry finishes and `addFlushTransform` runs when Playwright flushes the recorder. On Playwright 1.60+, both run during post-processing after `context.close()`. Their result is what lands on disk in either tier.
 - Response bodies are stored as separate blobs referenced by `content._file`, so they are not reachable from these hooks. To replace a body you have to `delete entry.response.content._file` **and** set `content.text`; setting `text` alone has never had any effect. Rewriting a body per request is what `addHarLookupTransform`'s `transformResult` is for.
 
 ## Recipes
@@ -395,13 +395,12 @@ function setExtraHash(page: Page, value: string | null): Promise<void>;
 
 ## installHarEngine
 
-Routes every subsequent `routeFromHAR()` call of this worker through the HAR engine of this package, which is what makes the `add*Transform` hooks fire.
+Routes every subsequent `routeFromHAR()` call of this worker through the public-API HAR engine on Playwright 1.60 and newer, which is what makes the `add*Transform` hooks fire there. On Playwright 1.23–1.59 the hooks install the historical internal patches themselves and this function is a no-op.
 
-`initDumps` calls it for you, so you only need it when you call `page.routeFromHAR()` / `context.routeFromHAR()` yourself: without it a direct `routeFromHAR()` runs as plain Playwright, with none of the transforms applied.
+`initDumps` calls it for you. On Playwright 1.60+, call it before using `page.routeFromHAR()` / `context.routeFromHAR()` directly; otherwise those calls run as plain Playwright, with none of the transforms applied.
 
 It has to be called before `routeFromHAR()`. The patch is applied to the `Page` / `BrowserContext` prototypes and is idempotent, so one call per worker process is enough.
 
 ```ts
 function installHarEngine(target: Page | BrowserContext): void;
 ```
-

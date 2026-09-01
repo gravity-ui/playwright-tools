@@ -17,15 +17,23 @@ import {
     initDumps,
     replaceBaseUrlInEntry,
 } from '../../har';
+import { getHarEngineTier } from '../../har/engine/legacyHarEngine';
 import { readZipEntries } from '../../har/vendor/zip';
 
 import type { OriginServer } from './origin-server';
 import { startOriginServer } from './origin-server';
 
+import playwrightTestPackage from '@playwright/test/package.json';
+
 const PLACEHOLDER = 'https://base.url.placeholder';
 const MARKER_HEADER = 'x-recorded-by-transform';
 
 const calls = { recorder: 0, flush: 0, open: 0, lookupParams: 0, lookupResult: 0 };
+const expectedTier =
+    playwrightTestPackage.version.startsWith('1.') &&
+    Number(playwrightTestPackage.version.split('.')[1]) < 60
+        ? 'legacy'
+        : 'public-api';
 
 let baseURL = '';
 
@@ -97,6 +105,10 @@ test.describe('har dumps', () => {
         origin.setPayload('RECORDED');
     });
 
+    test('selects the engine tier at the 1.60 boundary', () => {
+        expect(getHarEngineTier()).toBe(expectedTier);
+    });
+
     test('records a dump, transforms it and replays it back', async ({ browser }, testInfo) => {
         const dumpsFilePath = () => testInfo.outputPath('dump.har.zip');
 
@@ -118,7 +130,7 @@ test.describe('har dumps', () => {
         await recordContext.close();
 
         expect(calls.recorder).toBeGreaterThan(0);
-        expect(calls.flush).toBe(1);
+        expect(calls.flush).toBeGreaterThan(0);
 
         const members = await readZipEntries(dumpsFilePath());
         const harName = [...members.keys()].find((name) => name.endsWith('.har'));
@@ -257,5 +269,33 @@ test.describe('har dumps', () => {
         await expect(replayPage.locator('#out')).toHaveText(JSON.stringify({ payload: 'PATCHED' }));
 
         await replayContext.close();
+    });
+
+    test('keeps legacy recordHar transforms active without engine installation', async ({
+        browser,
+    }, testInfo) => {
+        test.skip(getHarEngineTier() !== 'legacy');
+
+        const path = testInfo.outputPath('record-har.har.zip');
+        const context = await browser.newContext({ recordHar: { path } });
+        const page = await context.newPage();
+
+        await page.goto(`${origin.baseURL}/`);
+        await expect(page.locator('#out')).toContainText('RECORDED');
+        await context.close();
+
+        const members = await readZipEntries(path);
+        const harName = [...members.keys()].find((name) => name.endsWith('.har'));
+        const har = JSON.parse(members.get(harName!)!.toString('utf8')) as HARFile;
+
+        expect(har.log.entries.length).toBeGreaterThan(0);
+        expect(har.log.entries.every((entry) => entry.request.url.startsWith(PLACEHOLDER))).toBe(
+            true,
+        );
+        expect(
+            har.log.entries.every((entry) =>
+                entry.response.headers.some((header) => header.name === MARKER_HEADER),
+            ),
+        ).toBe(true);
     });
 });

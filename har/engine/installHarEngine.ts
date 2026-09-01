@@ -4,6 +4,7 @@ import { degrade } from './diagnostics';
 import type { HarPostProcessTask } from './harPostProcessor';
 import { postProcessHarDump } from './harPostProcessor';
 import { installHarReplay } from './harReplayEngine';
+import { getHarEngineTier } from './legacyHarEngine';
 import { tryNativeHarReplay } from './nativeHarReplay';
 
 const ENGINE_INSTALLED = Symbol.for('@gravity-ui/playwright-tools/har-engine-installed');
@@ -150,12 +151,19 @@ function wrapRouteFromHAR(prototype: Patchable) {
 }
 
 /**
- * Routes every `routeFromHAR` call of this worker through the engine of this
- * package: transform-aware replay for reading, post-processing for recording.
+ * Routes every `routeFromHAR` call of this worker through the public-API engine:
+ * transform-aware replay for reading, post-processing for recording.
  *
- * Only public Playwright API is wrapped, so it survives any internal refactoring.
+ * Playwright versions through 1.59 use the historical internal engine instead;
+ * its patches are installed eagerly by the add*Transform functions.
  */
 export function installHarEngine(target: Page | BrowserContext): void {
+    // Released Playwright versions through 1.59 keep using the historical
+    // recorder/dispatcher patches installed by add*Transform itself.
+    if (getHarEngineTier() === 'legacy') {
+        return;
+    }
+
     const page = target as Page;
 
     if (typeof page.context === 'function') {

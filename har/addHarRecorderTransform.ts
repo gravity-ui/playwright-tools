@@ -1,3 +1,4 @@
+import { installLegacyHarTransform } from './engine/legacyHarEngine';
 import type { EntryTransformFunction } from './engine/transformRegistry';
 import { registerLegacyTransforms } from './engine/transformRegistry';
 
@@ -11,4 +12,5 @@ export type { EntryTransformFunction } from './engine/transformRegistry';
  */
 export function addHarRecorderTransform(transform: EntryTransformFunction) {
     registerLegacyTransforms('recorder', { recorder: transform });
+    installLegacyHarTransform('recorder');
 }

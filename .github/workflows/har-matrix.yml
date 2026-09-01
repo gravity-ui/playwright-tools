@@ -22,10 +22,8 @@ on:
 
 jobs:
   har_matrix:
-    # The HAR engine only uses public Playwright API, so it has to keep working
-    # across the whole supported range — including 1.59 (the last release that
-    # shipped lib/server/**) and 1.60 (the first bundled one, which is what broke
-    # the previous implementation).
+    # Playwright 1.59 is the last release on the legacy internal tier; 1.60 is
+    # the first release on the public-API tier after lib/server/** was bundled.
     #
     # The full range runs when the mechanism changes, i.e. on a pull request that
     # touches it. The nightly run only needs `latest`: the frozen versions cannot

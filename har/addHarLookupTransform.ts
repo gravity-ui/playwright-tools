@@ -1,3 +1,4 @@
+import { installLegacyHarTransform } from './engine/legacyHarEngine';
 import type {
     HarLookupParamsTransformFunction,
     HarLookupResultTransformFunction,
@@ -22,4 +23,5 @@ export function addHarLookupTransform(
         lookupParams: transformParams,
         lookupResult: transformResult,
     });
+    installLegacyHarTransform('lookup');
 }

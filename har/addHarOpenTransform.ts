@@ -1,3 +1,4 @@
+import { installLegacyHarTransform } from './engine/legacyHarEngine';
 import type { HarTransformFunction } from './engine/transformRegistry';
 import { registerLegacyTransforms } from './engine/transformRegistry';
 
@@ -8,4 +9,5 @@ export type { HarTransformFunction } from './engine/transformRegistry';
  */
 export function addHarOpenTransform(transform: HarTransformFunction) {
     registerLegacyTransforms('open', { open: transform });
+    installLegacyHarTransform('open');
 }
