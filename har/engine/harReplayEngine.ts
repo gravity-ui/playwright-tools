@@ -6,7 +6,7 @@ import type { Header, LocalUtilsHarLookupParams, LocalUtilsHarLookupResult } fro
 import { HarBackend } from '../vendor/harBackend';
 
 import { degrade } from './diagnostics';
-import { getHarTransforms } from './transformRegistry';
+import { getHarTransforms, markReplayOpened } from './transformRegistry';
 
 export type HarReplayOptions = {
     /**
@@ -145,6 +145,8 @@ export async function installHarReplay(
     file: string,
     { notFound = 'abort', url }: HarReplayOptions = {},
 ): Promise<void> {
+    markReplayOpened();
+
     const backend = await HarBackend.open(file);
     const harId = randomUUID();
     const { open } = getHarTransforms();

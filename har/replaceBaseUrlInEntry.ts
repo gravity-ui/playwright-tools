@@ -16,7 +16,8 @@ export function replaceBaseUrlInEntry(entry: Entry, fromUrl: string, toUrl: stri
     entry.request.url = entry.request.url.replace(fromUrl, toUrl);
 
     if (entry.response.redirectURL) {
-        entry.response.redirectURL.replace(fromUrl, toUrl);
+        // eslint-disable-next-line no-param-reassign
+        entry.response.redirectURL = entry.response.redirectURL.replace(fromUrl, toUrl);
     }
 
     const replaceBaseUrlInHeaders = (headers: Header[]) => {

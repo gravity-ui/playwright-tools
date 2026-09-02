@@ -35,19 +35,11 @@ function getPlaywrightCoreRoots(): string[] {
     return [...roots];
 }
 
-/**
- * Loads every installed copy of a playwright-core internal module.
- *
- * The second location preserves the historical support for installations where
- * @playwright/test owns a nested playwright-core dependency.
- */
-export function getPlaywrightCoreModules(path: string): PlaywrightCoreModule[] {
+function requireEach(paths: (string | undefined)[]): PlaywrightCoreModule[] {
     const resolvedModules = new Set<string>();
     const modules: PlaywrightCoreModule[] = [];
 
-    for (const root of getPlaywrightCoreRoots()) {
-        const modulePath = tryResolve(resolve(root, path));
-
+    for (const modulePath of paths) {
         if (!modulePath || resolvedModules.has(modulePath)) {
             continue;
         }
@@ -57,4 +49,23 @@ export function getPlaywrightCoreModules(path: string): PlaywrightCoreModule[] {
     }
 
     return modules;
+}
+
+/**
+ * Loads every installed copy of a playwright-core internal module.
+ *
+ * The second location preserves the historical support for installations where
+ * @playwright/test owns a nested playwright-core dependency.
+ */
+export function getPlaywrightCoreModules(path: string): PlaywrightCoreModule[] {
+    return requireEach(getPlaywrightCoreRoots().map((root) => tryResolve(resolve(root, path))));
+}
+
+/**
+ * Loads the public entry point of every installed copy of playwright-core: the
+ * `playwright` object with `chromium` / `firefox` / `webkit` on it. This is the
+ * same object the test runner launches browsers with.
+ */
+export function getPlaywrightCoreEntries(): PlaywrightCoreModule[] {
+    return requireEach(getPlaywrightCoreRoots().map((root) => tryResolve(root)));
 }

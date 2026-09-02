@@ -1,4 +1,4 @@
-import { installLegacyHarTransform } from './engine/legacyHarEngine';
+import { installHarEngine } from './engine/installHarEngine';
 import type { EntryTransformFunction } from './engine/transformRegistry';
 import { registerLegacyTransforms } from './engine/transformRegistry';
 
@@ -9,8 +9,11 @@ export type { EntryTransformFunction } from './engine/transformRegistry';
  *
  * The transform is applied to every entry of the recorded dump, in document
  * order, right before it is written to its final location.
+ *
+ * The first call wins for the whole worker process; later calls are ignored
+ * with a warning.
  */
 export function addHarRecorderTransform(transform: EntryTransformFunction) {
     registerLegacyTransforms('recorder', { recorder: transform });
-    installLegacyHarTransform('recorder');
+    installHarEngine();
 }

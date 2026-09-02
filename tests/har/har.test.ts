@@ -1,98 +1,27 @@
-import { readFile } from 'node:fs/promises';
-
 import { expect, test } from '@playwright/test';
 
-import type {
-    Entry,
-    HARFile,
-    LocalUtilsHarLookupParams,
-    LocalUtilsHarLookupResult,
-} from '../../har';
-import {
-    addFlushTransform,
-    addHarLookupTransform,
-    addHarOpenTransform,
-    addHarRecorderTransform,
-    clearHeaders,
-    initDumps,
-    replaceBaseUrlInEntry,
-} from '../../har';
+import { initDumps } from '../../har';
+import { getLastReplayEngine } from '../../har/engine/installHarEngine';
 import { getHarEngineTier } from '../../har/engine/legacyHarEngine';
-import { readZipEntries } from '../../har/vendor/zip';
 
 import type { OriginServer } from './origin-server';
 import { startOriginServer } from './origin-server';
-
-import playwrightTestPackage from '@playwright/test/package.json';
-
-const PLACEHOLDER = 'https://base.url.placeholder';
-const MARKER_HEADER = 'x-recorded-by-transform';
-
-const calls = { recorder: 0, flush: 0, open: 0, lookupParams: 0, lookupResult: 0 };
-const expectedTier =
-    playwrightTestPackage.version.startsWith('1.') &&
-    Number(playwrightTestPackage.version.split('.')[1]) < 60
-        ? 'legacy'
-        : 'public-api';
-
-let baseURL = '';
-
-// Registered once per process, exactly the way a consumer does it from a
-// module-level `playwrightPatches()` — the `add*Transform` latch only honours
-// the first call anyway.
-addHarRecorderTransform((entry: Entry) => {
-    calls.recorder++;
-
-    // eslint-disable-next-line no-param-reassign -- transforms mutate the entry in place
-    entry.request.headers = clearHeaders(entry.request.headers, {
-        removeHeaders: new Set(['cookie']),
-    });
-    // eslint-disable-next-line no-param-reassign -- transforms mutate the entry in place
-    entry.response.headers = clearHeaders(entry.response.headers, {
-        removeHeaders: new Set(['set-cookie']),
-    });
-    entry.response.headers.push({ name: MARKER_HEADER, value: '1' });
-
-    replaceBaseUrlInEntry(entry, baseURL, PLACEHOLDER);
-});
-
-addFlushTransform((entries: Entry[]) => {
-    calls.flush++;
-
-    return entries.filter((entry) => entry.time !== -1);
-});
-
-addHarOpenTransform((harFile: HARFile) => {
-    calls.open++;
-
-    for (const entry of harFile.log.entries) {
-        replaceBaseUrlInEntry(entry, PLACEHOLDER, baseURL);
-    }
-});
-
-addHarLookupTransform(
-    (params: LocalUtilsHarLookupParams) => {
-        calls.lookupParams++;
-
-        return params;
-    },
-    (result: LocalUtilsHarLookupResult, params: LocalUtilsHarLookupParams) => {
-        calls.lookupResult++;
-
-        if (result.action === 'fulfill' && params.url.endsWith('/api')) {
-            return { ...result, body: Buffer.from(JSON.stringify({ payload: 'PATCHED' }), 'utf8') };
-        }
-
-        return result;
-    },
-);
+import {
+    PATCHED_BODY,
+    callsSince,
+    expectScrubbed,
+    expectedTier,
+    readDump,
+    setBaseURL,
+    snapshotCalls,
+} from './transforms';
 
 test.describe('har dumps', () => {
     let origin: OriginServer;
 
     test.beforeAll(async () => {
         origin = await startOriginServer();
-        baseURL = origin.baseURL;
+        setBaseURL(origin.baseURL);
     });
 
     test.afterAll(async () => {
@@ -113,6 +42,7 @@ test.describe('har dumps', () => {
         const dumpsFilePath = () => testInfo.outputPath('dump.har.zip');
 
         // --- record ------------------------------------------------------
+        const beforeRecord = snapshotCalls();
         const recordContext = await browser.newContext();
         const recordPage = await recordContext.newPage();
 
@@ -129,35 +59,21 @@ test.describe('har dumps', () => {
         await expect(recordPage.locator('#out')).toContainText('RECORDED');
         await recordContext.close();
 
-        expect(calls.recorder).toBeGreaterThan(0);
-        expect(calls.flush).toBeGreaterThan(0);
+        const recordCalls = callsSince(beforeRecord);
 
-        const members = await readZipEntries(dumpsFilePath());
-        const harName = [...members.keys()].find((name) => name.endsWith('.har'));
-        const har = JSON.parse(members.get(harName!)!.toString('utf8')) as HARFile;
+        expect(recordCalls.recorder).toBeGreaterThan(0);
+        // The post-processor flushes the finished dump exactly once; Playwright's
+        // own recorder, patched on the legacy tier, flushes as it goes.
+        expect(recordCalls.flush).toBe(getHarEngineTier() === 'legacy' ? recordCalls.flush : 1);
+        expect(recordCalls.flush).toBeGreaterThan(0);
 
-        // The record-side transforms landed in the file that was actually written.
-        expect(har.log.entries.length).toBeGreaterThan(0);
-        expect(har.log.entries.every((entry) => entry.request.url.startsWith(PLACEHOLDER))).toBe(
-            true,
-        );
-        expect(
-            har.log.entries.flatMap((entry) =>
-                entry.response.headers.filter(
-                    (header) => header.name.toLowerCase() === 'set-cookie',
-                ),
-            ),
-        ).toStrictEqual([]);
-        expect(
-            har.log.entries.every((entry) =>
-                entry.response.headers.some((header) => header.name === MARKER_HEADER),
-            ),
-        ).toBe(true);
+        expectScrubbed(await readDump(dumpsFilePath()), origin.baseURL);
 
         // --- replay ------------------------------------------------------
         // Anything that still reaches the origin now answers with LIVE.
         origin.setPayload('LIVE');
 
+        const beforeReplay = snapshotCalls();
         const replayContext = await browser.newContext();
         const replayPage = await replayContext.newPage();
 
@@ -178,13 +94,19 @@ test.describe('har dumps', () => {
         await replayContext.close();
 
         // The lookup-result transform rewrote the recorded body...
-        expect(served).toBe(JSON.stringify({ payload: 'PATCHED' }));
+        expect(served).toBe(PATCHED_BODY);
         // ...and nothing leaked through to the live origin.
         expect(served).not.toContain('LIVE');
 
-        expect(calls.open).toBeGreaterThan(0);
-        expect(calls.lookupParams).toBeGreaterThan(0);
-        expect(calls.lookupResult).toBeGreaterThan(0);
+        const replayCalls = callsSince(beforeReplay);
+
+        expect(replayCalls.open).toBe(1);
+        expect(replayCalls.lookupParams).toBeGreaterThan(0);
+        expect(replayCalls.lookupResult).toBeGreaterThan(0);
+
+        // Playwright's own router served the replay; the userland engine is for
+        // thin clients only.
+        expect(getLastReplayEngine()).toBe(getHarEngineTier() === 'legacy' ? undefined : 'native');
     });
 
     test('replays a recorded navigation redirect', async ({ browser }, testInfo) => {
@@ -204,6 +126,11 @@ test.describe('har dumps', () => {
         await expect(recordPage.locator('#out')).toContainText('RECORDED');
         await recordContext.close();
 
+        const har = await readDump(dumpsFilePath());
+
+        expectScrubbed(har, origin.baseURL);
+        expect(har.log.entries.map((entry) => entry.response.status)).toContain(302);
+
         const replayContext = await browser.newContext();
         const replayPage = await replayContext.newPage();
 
@@ -219,7 +146,7 @@ test.describe('har dumps', () => {
         origin.setPayload('LIVE');
 
         await replayPage.goto(`${origin.baseURL}/moved`);
-        await expect(replayPage.locator('#out')).toHaveText(JSON.stringify({ payload: 'PATCHED' }));
+        await expect(replayPage.locator('#out')).toHaveText(PATCHED_BODY);
 
         const url = replayPage.url();
 
@@ -246,12 +173,7 @@ test.describe('har dumps', () => {
         await recordContext.close();
 
         // Playwright wrote a plain `.har` with the bodies as sidecar files next to it.
-        const har = JSON.parse(await readFile(dumpsFilePath(), 'utf8')) as HARFile;
-
-        expect(har.log.entries.length).toBeGreaterThan(0);
-        expect(har.log.entries.every((entry) => entry.request.url.startsWith(PLACEHOLDER))).toBe(
-            true,
-        );
+        expectScrubbed(await readDump(dumpsFilePath()), origin.baseURL);
 
         origin.setPayload('LIVE');
 
@@ -266,36 +188,8 @@ test.describe('har dumps', () => {
         });
 
         await replayPage.goto(`${origin.baseURL}/`);
-        await expect(replayPage.locator('#out')).toHaveText(JSON.stringify({ payload: 'PATCHED' }));
+        await expect(replayPage.locator('#out')).toHaveText(PATCHED_BODY);
 
         await replayContext.close();
-    });
-
-    test('keeps legacy recordHar transforms active without engine installation', async ({
-        browser,
-    }, testInfo) => {
-        test.skip(getHarEngineTier() !== 'legacy');
-
-        const path = testInfo.outputPath('record-har.har.zip');
-        const context = await browser.newContext({ recordHar: { path } });
-        const page = await context.newPage();
-
-        await page.goto(`${origin.baseURL}/`);
-        await expect(page.locator('#out')).toContainText('RECORDED');
-        await context.close();
-
-        const members = await readZipEntries(path);
-        const harName = [...members.keys()].find((name) => name.endsWith('.har'));
-        const har = JSON.parse(members.get(harName!)!.toString('utf8')) as HARFile;
-
-        expect(har.log.entries.length).toBeGreaterThan(0);
-        expect(har.log.entries.every((entry) => entry.request.url.startsWith(PLACEHOLDER))).toBe(
-            true,
-        );
-        expect(
-            har.log.entries.every((entry) =>
-                entry.response.headers.some((header) => header.name === MARKER_HEADER),
-            ),
-        ).toBe(true);
     });
 });

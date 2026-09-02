@@ -6,7 +6,7 @@ import type { LocalUtilsHarLookupParams, LocalUtilsHarLookupResult } from '../ty
 import { HarBackend } from '../vendor/harBackend';
 
 import { degrade } from './diagnostics';
-import { getHarTransforms } from './transformRegistry';
+import { getHarTransforms, markReplayOpened } from './transformRegistry';
 
 const LOCAL_UTILS_PATCHED = Symbol.for('@gravity-ui/playwright-tools/har-local-utils-patched');
 
@@ -37,6 +37,13 @@ type ConnectionOwner = {
  * random, so one process-wide map serves every context of the worker.
  */
 const ownBackends = new Map<string, HarBackend>();
+
+let forcedFallback = false;
+
+/** Test seam: makes every replay take the userland engine, as a thin client would. */
+export function setForcedFallbackReplay(enabled: boolean): void {
+    forcedFallback = enabled;
+}
 
 function getLocalUtils(target: Page | BrowserContext): LocalUtils | undefined {
     try {
@@ -85,6 +92,8 @@ function patchLocalUtils(localUtils: LocalUtils): void {
 
     // eslint-disable-next-line no-param-reassign -- intentional instance patching
     localUtils.harOpen = async (params: HarOpenParams) => {
+        markReplayOpened();
+
         const { open } = getHarTransforms();
 
         if (!open) {
@@ -146,6 +155,10 @@ export async function tryNativeHarReplay(
     file: string,
     options: Record<string, unknown>,
 ): Promise<boolean> {
+    if (forcedFallback) {
+        return false;
+    }
+
     const localUtils = getLocalUtils(target);
 
     if (!localUtils) {

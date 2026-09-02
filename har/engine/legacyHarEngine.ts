@@ -6,8 +6,7 @@ import type {
     LocalUtilsHarLookupResult,
 } from '../types';
 
-import type { LegacyTransformCall } from './transformRegistry';
-import { getHarTransforms } from './transformRegistry';
+import { getHarTransforms, markReplayOpened } from './transformRegistry';
 
 const HAR_RECORDER_PATH = 'lib/server/har/harRecorder';
 const LOCAL_UTILS_DISPATCHER_PATH = 'lib/server/dispatchers/localUtilsDispatcher';
@@ -25,7 +24,7 @@ type LegacyModules = {
 };
 
 let cachedModules: LegacyModules | null | undefined;
-const installedCalls = new Set<LegacyTransformCall>();
+let installed = false;
 
 function getLegacyModules(): LegacyModules | undefined {
     if (cachedModules !== undefined) {
@@ -155,6 +154,8 @@ function dispatcherPatches(modules: PlaywrightCoreModule[], call: 'lookup' | 'op
                     metadata?: unknown,
                     ...rest: unknown[]
                 ) {
+                    markReplayOpened();
+
                     const { lookupParams, lookupResult } = getHarTransforms();
                     const nextParams = lookupParams ? lookupParams(params) : params;
                     const result = await original.call(this, nextParams, metadata, ...rest);
@@ -179,6 +180,8 @@ function dispatcherPatches(modules: PlaywrightCoreModule[], call: 'lookup' | 'op
             method: 'harOpen',
             prototype,
             async replacement(this: Dispatcher, ...args: unknown[]) {
+                markReplayOpened();
+
                 const result = await original.apply(this, args);
                 const backends = this._harBackends ?? this._harBakends;
                 const harFile = backends?.get(result.harId)?._harFile;
@@ -193,25 +196,29 @@ function dispatcherPatches(modules: PlaywrightCoreModule[], call: 'lookup' | 'op
     });
 }
 
-/** Installs one historical transform patch. Failed attempts remain retryable. */
-export function installLegacyHarTransform(call: LegacyTransformCall): boolean {
+/**
+ * Installs the historical patches for all four hooks at once. Every patch reads
+ * the registry lazily, so an unused hook is a pass-through. Returns `false` on
+ * the public-API tier; a failed attempt remains retryable.
+ */
+export function installLegacyHarEngine(): boolean {
     const modules = getLegacyModules();
 
     if (!modules) {
         return false;
     }
 
-    if (installedCalls.has(call)) {
+    if (installed) {
         return true;
     }
 
-    const patches =
-        call === 'recorder' || call === 'flush'
-            ? recorderPatches(modules.recorders, call)
-            : dispatcherPatches(modules.dispatchers, call);
-
-    applyPatches(patches);
-    installedCalls.add(call);
+    applyPatches([
+        ...recorderPatches(modules.recorders, 'recorder'),
+        ...recorderPatches(modules.recorders, 'flush'),
+        ...dispatcherPatches(modules.dispatchers, 'lookup'),
+        ...dispatcherPatches(modules.dispatchers, 'open'),
+    ]);
+    installed = true;
 
     return true;
 }

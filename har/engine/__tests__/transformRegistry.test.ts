@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import type {
     Entry,
@@ -6,8 +6,11 @@ import type {
     LocalUtilsHarLookupParams,
     LocalUtilsHarLookupResult,
 } from '../../types';
+import { resetDegradations } from '../diagnostics';
+import type * as RegistryModule from '../transformRegistry';
 import {
     getHarTransforms,
+    markReplayOpened,
     registerLegacyTransforms,
     resetHarTransforms,
     setFixtureHarTransforms,
@@ -17,7 +20,15 @@ const noopOpen = (_harFile: HARFile) => undefined;
 const noopRecorder = (_entry: Entry) => undefined;
 
 describe('transformRegistry', () => {
+    let warn: ReturnType<typeof jest.spyOn>;
+
+    beforeEach(() => {
+        warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    });
+
     afterEach(() => {
+        warn.mockRestore();
+        resetDegradations();
         resetHarTransforms({ global: true });
     });
 
@@ -106,5 +117,77 @@ describe('transformRegistry', () => {
         registerLegacyTransforms('open', { open: second });
 
         expect(getHarTransforms().open).toBe(second);
+    });
+
+    it('warns when a later registration carries a different function', () => {
+        const first = (harFile: HARFile) => noopOpen(harFile);
+        const second = (harFile: HARFile) => noopOpen(harFile);
+
+        registerLegacyTransforms('open', { open: first });
+        registerLegacyTransforms('open', { open: second });
+        registerLegacyTransforms('open', { open: second });
+
+        expect(getHarTransforms().open).toBe(first);
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(warn.mock.calls[0]![0]).toContain('transform-registered-twice');
+        expect(warn.mock.calls[0]![0]).toContain('open:');
+    });
+
+    it('warns per hook', () => {
+        registerLegacyTransforms('open', { open: noopOpen });
+        registerLegacyTransforms('open', { open: (harFile: HARFile) => noopOpen(harFile) });
+        registerLegacyTransforms('recorder', { recorder: noopRecorder });
+        registerLegacyTransforms('recorder', { recorder: (entry: Entry) => noopRecorder(entry) });
+
+        expect(warn.mock.calls.map(([message]: unknown[]) => String(message))).toStrictEqual([
+            expect.stringContaining('transform-registered-twice:open'),
+            expect.stringContaining('transform-registered-twice:recorder'),
+        ]);
+    });
+
+    it('stays silent when the same function is registered again', () => {
+        registerLegacyTransforms('recorder', { recorder: noopRecorder });
+        registerLegacyTransforms('recorder', { recorder: noopRecorder });
+
+        expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('throws when an open transform is registered after a replay has started', () => {
+        markReplayOpened();
+
+        expect(() => registerLegacyTransforms('open', { open: noopOpen })).toThrow(
+            /addHarOpenTransform\(\) was called after routeFromHAR\(\)/,
+        );
+        expect(getHarTransforms().open).toBeUndefined();
+
+        // The other hooks are read lazily and still apply.
+        registerLegacyTransforms('recorder', { recorder: noopRecorder });
+        setFixtureHarTransforms({ open: noopOpen });
+
+        expect(getHarTransforms().recorder).toBe(noopRecorder);
+        expect(getHarTransforms().open).toBe(noopOpen);
+    });
+
+    it('forgets the opened replay on a global reset', () => {
+        markReplayOpened();
+        resetHarTransforms({ global: true });
+
+        expect(() => registerLegacyTransforms('open', { open: noopOpen })).not.toThrow();
+    });
+
+    it('shares the registry with another copy of the module', () => {
+        registerLegacyTransforms('open', { open: noopOpen });
+
+        let other: typeof RegistryModule | undefined;
+
+        jest.isolateModules(() => {
+            other = require('../transformRegistry') as typeof RegistryModule;
+        });
+
+        expect(other!.getHarTransforms().open).toBe(noopOpen);
+
+        other!.registerLegacyTransforms('recorder', { recorder: noopRecorder });
+
+        expect(getHarTransforms().recorder).toBe(noopRecorder);
     });
 });

@@ -80,9 +80,11 @@ function replaceHost(harFile: HARFile) {
  */
 function makeLocalUtils() {
     const playwright = {
-        harOpen: jest.fn(async (_params: { file: string }): Promise<HarOpenResult> => ({
-            harId: PLAYWRIGHT_HAR_ID,
-        })),
+        harOpen: jest.fn(
+            async (_params: { file: string }): Promise<HarOpenResult> => ({
+                harId: PLAYWRIGHT_HAR_ID,
+            }),
+        ),
         harLookup: jest.fn(
             async (_params: LocalUtilsHarLookupParams): Promise<LocalUtilsHarLookupResult> => ({
                 action: 'noentry',
