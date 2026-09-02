@@ -17,6 +17,8 @@ const METHOD_STORE = 0;
 const METHOD_DEFLATE = 8;
 
 const MAX_COMMENT_SIZE = 0xffff;
+const MAX_ENTRIES = 0xffff;
+const MAX_OFFSET = 0xffffffff;
 
 let crcTable: Uint32Array | undefined;
 
@@ -79,15 +81,19 @@ export async function readZipEntries(file: string): Promise<Map<string, Buffer>>
     let count = buffer.readUInt16LE(endOfCentralDirectory + 10);
     let centralDirectoryOffset = buffer.readUInt32LE(endOfCentralDirectory + 16);
 
-    if (centralDirectoryOffset === 0xffffffff || count === 0xffff) {
+    // A ZIP64 archive keeps the real numbers in its own end-of-central-directory
+    // record, found through the locator right before the classic one.
+    if (centralDirectoryOffset === MAX_OFFSET || count === MAX_ENTRIES) {
         const locator = endOfCentralDirectory - 20;
 
-        if (locator >= 0 && buffer.readUInt32LE(locator) === ZIP64_LOCATOR_SIGNATURE) {
-            const zip64Offset = Number(buffer.readBigUInt64LE(locator + 8));
-
-            count = Number(buffer.readBigUInt64LE(zip64Offset + 32));
-            centralDirectoryOffset = Number(buffer.readBigUInt64LE(zip64Offset + 48));
+        if (locator < 0 || buffer.readUInt32LE(locator) !== ZIP64_LOCATOR_SIGNATURE) {
+            throw new Error(`ZIP64 archive without a ZIP64 locator: ${file}`);
         }
+
+        const zip64Offset = Number(buffer.readBigUInt64LE(locator + 8));
+
+        count = Number(buffer.readBigUInt64LE(zip64Offset + 32));
+        centralDirectoryOffset = Number(buffer.readBigUInt64LE(zip64Offset + 48));
     }
 
     const entries = new Map<string, Buffer>();
@@ -106,6 +112,12 @@ export async function readZipEntries(file: string): Promise<Map<string, Buffer>>
         const localOffset = buffer.readUInt32LE(position + 42);
         const name = buffer.toString('utf8', position + 46, position + 46 + nameLength);
 
+        if (compressedSize === MAX_OFFSET || localOffset === MAX_OFFSET) {
+            throw new Error(
+                `ZIP64 entries (a member or an archive of 4 GiB or more) are not supported: ${name} in ${file}`,
+            );
+        }
+
         const localNameLength = buffer.readUInt16LE(localOffset + 26);
         const localExtraLength = buffer.readUInt16LE(localOffset + 28);
         const dataStart = localOffset + 30 + localNameLength + localExtraLength;
@@ -123,6 +135,13 @@ export async function readZipEntries(file: string): Promise<Map<string, Buffer>>
  * Writes a ZIP archive readable by Playwright itself.
  */
 export async function writeZipEntries(file: string, entries: Map<string, Buffer>): Promise<void> {
+    if (entries.size > MAX_ENTRIES) {
+        throw new Error(
+            `Too many members for a HAR archive without ZIP64 support: ${entries.size} in ${file}, ` +
+                `at most ${MAX_ENTRIES} can be written`,
+        );
+    }
+
     const localParts: Buffer[] = [];
     const centralParts: Buffer[] = [];
     let offset = 0;
@@ -165,6 +184,12 @@ export async function writeZipEntries(file: string, entries: Map<string, Buffer>
         centralParts.push(centralHeader, nameBuffer);
 
         offset += localHeader.length + nameBuffer.length + payload.length;
+
+        if (offset > MAX_OFFSET) {
+            throw new Error(
+                `HAR archive too large without ZIP64 support: ${file} exceeds 4 GiB at ${name}`,
+            );
+        }
     }
 
     const centralDirectory = Buffer.concat(centralParts);

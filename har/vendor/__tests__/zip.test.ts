@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -92,5 +92,100 @@ describe('zip', () => {
 
         await writeFile(file, '{"log":{"entries":[]}}', 'utf8');
         await expect(readZipEntries(file)).rejects.toThrow('Not a ZIP archive');
+    });
+
+    /**
+     * Turns a classic archive into a ZIP64 one the way an archiver does past
+     * 65535 members: the classic record says "look elsewhere" and a ZIP64 record
+     * plus its locator carry the real numbers.
+     */
+    async function convertToZip64(file: string) {
+        const buffer = await readFile(file);
+        const eocd = buffer.length - 22;
+        const count = buffer.readUInt16LE(eocd + 10);
+        const centralDirectorySize = buffer.readUInt32LE(eocd + 12);
+        const centralDirectoryOffset = buffer.readUInt32LE(eocd + 16);
+        const zip64Record = Buffer.alloc(56);
+        const zip64Locator = Buffer.alloc(20);
+        const classic = Buffer.from(buffer.subarray(eocd));
+
+        zip64Record.writeUInt32LE(0x06064b50, 0);
+        zip64Record.writeBigUInt64LE(BigInt(44), 4);
+        zip64Record.writeBigUInt64LE(BigInt(count), 24);
+        zip64Record.writeBigUInt64LE(BigInt(count), 32);
+        zip64Record.writeBigUInt64LE(BigInt(centralDirectorySize), 40);
+        zip64Record.writeBigUInt64LE(BigInt(centralDirectoryOffset), 48);
+
+        zip64Locator.writeUInt32LE(0x07064b50, 0);
+        zip64Locator.writeBigUInt64LE(BigInt(eocd), 8);
+        zip64Locator.writeUInt32LE(1, 16);
+
+        classic.writeUInt16LE(0xffff, 8);
+        classic.writeUInt16LE(0xffff, 10);
+        classic.writeUInt32LE(0xffffffff, 16);
+
+        await writeFile(
+            file,
+            Buffer.concat([buffer.subarray(0, eocd), zip64Record, zip64Locator, classic]),
+        );
+    }
+
+    it('reads every member of a ZIP64 archive', async () => {
+        const file = join(directory, 'zip64.zip');
+
+        await writeZipEntries(
+            file,
+            new Map([
+                ['first.txt', Buffer.from('one', 'utf8')],
+                ['second.txt', Buffer.from('two', 'utf8')],
+            ]),
+        );
+        await convertToZip64(file);
+
+        const entries = await readZipEntries(file);
+
+        expect([...entries.keys()]).toStrictEqual(['first.txt', 'second.txt']);
+        expect(entries.get('second.txt')!.toString('utf8')).toBe('two');
+    });
+
+    it('refuses a ZIP64 archive that has no locator instead of truncating it', async () => {
+        const file = join(directory, 'zip64-no-locator.zip');
+
+        await writeZipEntries(file, new Map([['first.txt', Buffer.from('one', 'utf8')]]));
+
+        const buffer = await readFile(file);
+
+        buffer.writeUInt16LE(0xffff, buffer.length - 22 + 10);
+        await writeFile(file, buffer);
+
+        await expect(readZipEntries(file)).rejects.toThrow(/ZIP64 archive without a ZIP64 locator/);
+    });
+
+    it('refuses a ZIP64 member by name', async () => {
+        const file = join(directory, 'zip64-member.zip');
+
+        await writeZipEntries(file, new Map([['huge.bin', Buffer.from('tiny', 'utf8')]]));
+
+        const buffer = await readFile(file);
+        const centralDirectory = buffer.readUInt32LE(buffer.length - 22 + 16);
+
+        buffer.writeUInt32LE(0xffffffff, centralDirectory + 20);
+        await writeFile(file, buffer);
+
+        await expect(readZipEntries(file)).rejects.toThrow(
+            /ZIP64 entries .* are not supported: huge\.bin/,
+        );
+    });
+
+    it('refuses to write more members than a classic archive can hold', async () => {
+        const entries = new Map<string, Buffer>();
+
+        for (let index = 0; index <= 0xffff; index++) {
+            entries.set(`member-${index}`, Buffer.alloc(0));
+        }
+
+        await expect(writeZipEntries(join(directory, 'too-many.zip'), entries)).rejects.toThrow(
+            /Too many members .* 65536 in .*too-many\.zip, at most 65535/,
+        );
     });
 });

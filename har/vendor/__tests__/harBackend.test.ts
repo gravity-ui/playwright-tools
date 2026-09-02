@@ -313,6 +313,39 @@ describe('HarBackend', () => {
         expect(result.body?.toString('utf8')).toBe('after redirect');
     });
 
+    it.each([
+        { status: 303, method: 'POST', followedAs: 'GET' },
+        { status: 303, method: 'HEAD', followedAs: 'HEAD' },
+        { status: 307, method: 'POST', followedAs: 'POST' },
+        { status: 301, method: 'PUT', followedAs: 'PUT' },
+    ])(
+        'follows a $status redirect of a $method as $followedAs',
+        async ({ status, method, followedAs }) => {
+            const backend = await open([
+                makeEntry({
+                    url: `${HOST}/submit`,
+                    method,
+                    status,
+                    responseHeaders: [{ name: 'location', value: `${HOST}/done` }],
+                }),
+                makeEntry({
+                    url: `${HOST}/done`,
+                    method: followedAs,
+                    content: { text: `after ${followedAs}`, mimeType: 'text/plain' },
+                }),
+                makeEntry({
+                    url: `${HOST}/done`,
+                    method: followedAs === 'GET' ? 'POST' : 'GET',
+                    content: { text: 'wrong method', mimeType: 'text/plain' },
+                }),
+            ]);
+
+            const result = await backend.lookup(`${HOST}/submit`, method, [], undefined, false);
+
+            expect(result.body?.toString('utf8')).toBe(`after ${followedAs}`);
+        },
+    );
+
     it('reports an error on a redirect cycle', async () => {
         const backend = await open([
             makeEntry({
