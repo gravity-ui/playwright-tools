@@ -1,198 +1,166 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 import type { BrowserContext, Page } from '@playwright/test';
 
-import type { HARFile, LocalUtilsHarLookupParams, LocalUtilsHarLookupResult } from '../types';
-import { harJsonStringify } from '../vendor/harJsonStringify';
-import { readZipEntries, writeZipEntries } from '../vendor/zip';
+import type { LocalUtilsHarLookupParams, LocalUtilsHarLookupResult } from '../types';
+import { HarBackend } from '../vendor/harBackend';
 
 import { degrade } from './diagnostics';
 import { getHarTransforms } from './transformRegistry';
 
-const LOOKUP_PATCHED = Symbol.for('@gravity-ui/playwright-tools/har-lookup-patched');
+const LOCAL_UTILS_PATCHED = Symbol.for('@gravity-ui/playwright-tools/har-local-utils-patched');
 
-type HarLookup = (params: LocalUtilsHarLookupParams) => Promise<LocalUtilsHarLookupResult>;
+type HarOpenParams = { file: string };
+type HarOpenResult = { harId?: string; error?: string };
+type HarCloseParams = { harId: string };
 
+/**
+ * The client-side `LocalUtils` calls Playwright's `HarRouter` makes. They exist
+ * since Playwright 1.51 (before that the router went through the raw channel)
+ * and are missing altogether in a thin client.
+ */
 type LocalUtils = {
-    harLookup: HarLookup;
+    harOpen: (params: HarOpenParams) => Promise<HarOpenResult>;
+    harLookup: (params: LocalUtilsHarLookupParams) => Promise<LocalUtilsHarLookupResult>;
+    harClose: (params: HarCloseParams) => Promise<void>;
 };
 
 type ConnectionOwner = {
     _connection?: {
-        localUtils?: () => LocalUtils | undefined;
+        localUtils?: () => Partial<LocalUtils> | undefined;
     };
 };
 
 /**
- * `LocalUtils.harLookup` is the seam the client-side `HarRouter` calls; it exists
- * since Playwright 1.51 (before that the router went through the raw channel) and
- * is out of process for a thin client. Probing the method covers both cases.
+ * Dumps opened by this package instead of Playwright, keyed by the id handed to
+ * Playwright's router. `LocalUtils` is a per-connection singleton and the ids are
+ * random, so one process-wide map serves every context of the worker.
  */
+const ownBackends = new Map<string, HarBackend>();
+
 function getLocalUtils(target: Page | BrowserContext): LocalUtils | undefined {
     try {
         const localUtils = (target as unknown as ConnectionOwner)._connection?.localUtils?.();
 
-        return typeof localUtils?.harLookup === 'function' ? localUtils : undefined;
+        if (
+            typeof localUtils?.harOpen === 'function' &&
+            typeof localUtils.harLookup === 'function' &&
+            typeof localUtils.harClose === 'function'
+        ) {
+            return localUtils as LocalUtils;
+        }
+
+        return undefined;
     } catch {
         return undefined;
     }
 }
 
 /**
- * Wraps `LocalUtils.harLookup` so that the registered lookup transforms see
- * exactly the parameters and the result Playwright itself passes around.
- * Installed once per process — the object is a per-connection singleton.
+ * Wraps the three `LocalUtils` calls of Playwright's `HarRouter`, which is the
+ * only code that calls them:
+ *
+ * - `harOpen` opens the dump here whenever an open transform is registered, so the
+ *   transform is applied in memory and the file on disk stays as it is. Without
+ *   one, Playwright opens the dump itself.
+ * - `harLookup` answers from the dump opened here, or from Playwright's own
+ *   backend, with the registered lookup transforms around it — the transforms see
+ *   exactly the parameters and the result Playwright passes around.
+ * - `harClose` releases whichever side opened the dump.
+ *
+ * Installed once per object — it is a per-connection singleton.
  */
-function patchHarLookup(localUtils: LocalUtils): void {
+function patchLocalUtils(localUtils: LocalUtils): void {
     const patchable = localUtils as unknown as Record<symbol, unknown>;
 
-    if (patchable[LOOKUP_PATCHED]) {
+    if (patchable[LOCAL_UTILS_PATCHED]) {
         return;
     }
 
-    const original = localUtils.harLookup.bind(localUtils);
+    const original: LocalUtils = {
+        harOpen: localUtils.harOpen.bind(localUtils),
+        harLookup: localUtils.harLookup.bind(localUtils),
+        harClose: localUtils.harClose.bind(localUtils),
+    };
+
+    // eslint-disable-next-line no-param-reassign -- intentional instance patching
+    localUtils.harOpen = async (params: HarOpenParams) => {
+        const { open } = getHarTransforms();
+
+        if (!open) {
+            return original.harOpen(params);
+        }
+
+        // A missing or malformed dump rejects `routeFromHAR`, as it does natively.
+        const backend = await HarBackend.open(params.file);
+
+        open(backend.harFile);
+
+        const harId = randomUUID();
+
+        ownBackends.set(harId, backend);
+
+        return { harId };
+    };
 
     // eslint-disable-next-line no-param-reassign -- intentional instance patching
     localUtils.harLookup = async (params: LocalUtilsHarLookupParams) => {
         const { lookupParams, lookupResult } = getHarTransforms();
         const nextParams = lookupParams ? lookupParams(params) : params;
-        const result = await original(nextParams);
+        const backend = ownBackends.get(nextParams.harId);
+        const result = backend
+            ? await backend.lookup(
+                  nextParams.url,
+                  nextParams.method,
+                  nextParams.headers,
+                  nextParams.postData,
+                  nextParams.isNavigationRequest,
+              )
+            : await original.harLookup(nextParams);
 
         return lookupResult ? await lookupResult(result, nextParams) : result;
     };
 
-    patchable[LOOKUP_PATCHED] = true;
-}
-
-async function writeTransformedHar(file: string, harFile: HARFile): Promise<string> {
-    const content = Buffer.from(harJsonStringify(harFile), 'utf8');
-
-    if (!file.endsWith('.zip')) {
-        // `content._file` entries are resolved relative to the HAR file, so the
-        // rewritten copy has to stay next to the original.
-        const target = join(dirname(file), `${basename(file)}.replay.har`);
-
-        await writeFile(target, content);
-
-        return target;
-    }
-
-    const entries = await readZipEntries(file);
-    const harName = [...entries.keys()].find((name) => name.endsWith('.har'));
-
-    if (harName === undefined) {
-        throw new Error(`Specified archive does not have a .har file: ${file}`);
-    }
-
-    entries.set(harName, content);
-
-    const directory = await mkdtemp(join(tmpdir(), 'playwright-tools-har-'));
-    const target = join(directory, basename(file));
-
-    await writeZipEntries(target, entries);
-
-    return target;
-}
-
-/**
- * Applies the registered open transform by materialising a rewritten copy of the
- * dump, so that Playwright's own HAR backend parses the already-transformed file.
- * Returns the path to route from, plus a cleanup callback.
- */
-async function prepareHarFile(
-    file: string,
-): Promise<{ path: string; cleanup?: () => Promise<void> }> {
-    const { open } = getHarTransforms();
-
-    if (!open) {
-        return { path: file };
-    }
-
-    const entries = file.endsWith('.zip') ? await readZipEntries(file) : undefined;
-    let harFile: HARFile;
-
-    if (entries) {
-        const harName = [...entries.keys()].find((name) => name.endsWith('.har'));
-        const content = harName === undefined ? undefined : entries.get(harName);
-
-        if (content === undefined) {
-            throw new Error(`Specified archive does not have a .har file: ${file}`);
+    // eslint-disable-next-line no-param-reassign -- intentional instance patching
+    localUtils.harClose = async (params: HarCloseParams) => {
+        if (ownBackends.delete(params.harId)) {
+            return;
         }
 
-        harFile = JSON.parse(content.toString('utf8')) as HARFile;
-    } else {
-        harFile = JSON.parse(await readFile(file, 'utf8')) as HARFile;
-    }
-
-    open(harFile);
-
-    const path = await writeTransformedHar(file, harFile);
-
-    return {
-        path,
-        cleanup: async () => {
-            try {
-                // `harRouter.dispose()` fires `harClose` without awaiting it, so the
-                // backend may still hold the temporary zip open right after
-                // `context.close()` resolves. Retry, and never fail the test over a
-                // scratch file that could not be removed.
-                await rm(file.endsWith('.zip') ? dirname(path) : path, {
-                    force: true,
-                    recursive: true,
-                    maxRetries: 3,
-                });
-            } catch (error) {
-                degrade(
-                    'temp-copy-not-removed',
-                    'Could not remove the temporary copy of the dump ' +
-                        `at ${path}: ${(error as Error).message}`,
-                );
-            }
-        },
+        await original.harClose(params);
     };
+
+    patchable[LOCAL_UTILS_PATCHED] = true;
 }
 
-export type NativeReplayResult = { cleanup?: () => Promise<void> } | undefined;
-
 /**
- * Replays a dump through Playwright's own `routeFromHAR`, keeping its request
- * matching and its response timing, while still honouring the transforms of
- * this package.
+ * Replays a dump through Playwright's own `routeFromHAR`, keeping its router and
+ * its response timing, while still honouring the transforms of this package.
  *
- * Returns `undefined` when the seam is not available, so that the caller can
- * fall back to the userland engine.
+ * Returns `false` when the seam is not available, so that the caller can fall
+ * back to the userland engine.
  */
 export async function tryNativeHarReplay(
     target: Page | BrowserContext,
     routeFromHAR: (har: string, options: Record<string, unknown>) => Promise<void>,
     file: string,
     options: Record<string, unknown>,
-): Promise<NativeReplayResult> {
+): Promise<boolean> {
     const localUtils = getLocalUtils(target);
 
     if (!localUtils) {
         degrade(
             'no-lookup-seam',
-            'LocalUtils.harLookup is not reachable (Playwright older than 1.51, or a thin client). ' +
-                'Falling back to the built-in replay engine.',
+            'LocalUtils.harOpen/harLookup/harClose are not reachable (Playwright older than 1.51, ' +
+                'or a thin client). Falling back to the built-in replay engine.',
         );
 
-        return undefined;
+        return false;
     }
 
-    patchHarLookup(localUtils);
+    patchLocalUtils(localUtils);
 
-    const { path, cleanup } = await prepareHarFile(file);
+    await routeFromHAR.call(target, file, options);
 
-    try {
-        await routeFromHAR.call(target, path, options);
-    } catch (error) {
-        await cleanup?.();
-
-        throw error;
-    }
-
-    return { cleanup };
+    return true;
 }

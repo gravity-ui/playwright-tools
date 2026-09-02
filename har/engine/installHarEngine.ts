@@ -125,8 +125,9 @@ function wrapRouteFromHAR(prototype: Patchable) {
             return;
         }
 
-        // Preferred: Playwright replays the dump itself, so request matching and
-        // response timing stay exactly as they are without this package.
+        // Preferred: Playwright's own router replays the dump, so response timing
+        // stays exactly as it is without this package. Only the lookups are answered
+        // here, and only when an open transform has to be applied.
         const native = await tryNativeHarReplay(
             this,
             original as unknown as (har: string, options: Record<string, unknown>) => Promise<void>,
@@ -135,10 +136,6 @@ function wrapRouteFromHAR(prototype: Patchable) {
         );
 
         if (native) {
-            if (native.cleanup) {
-                onContextClose(contextOf(this), native.cleanup);
-            }
-
             return;
         }
 
