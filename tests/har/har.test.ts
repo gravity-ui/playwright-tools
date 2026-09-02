@@ -128,9 +128,7 @@ test.describe('har dumps', () => {
 
         const har = await readDump(dumpsFilePath());
 
-        expectScrubbed(har, origin.baseURL, {
-            ignoreRedirectURL: getHarEngineTier() === 'legacy',
-        });
+        expectScrubbed(har, origin.baseURL, { legacyRedirects: getHarEngineTier() === 'legacy' });
         expect(har.log.entries.map((entry) => entry.response.status)).toContain(302);
 
         const replayContext = await browser.newContext();

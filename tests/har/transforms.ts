@@ -128,12 +128,18 @@ export async function readDump(file: string): Promise<HARFile> {
 
 export type ScrubOptions = {
     /**
-     * On Playwright 1.23–1.59 `response.redirectURL` is assigned by the tracer
-     * when the follow-up request starts, which can be after the per-entry hook
-     * already ran for the redirect, so the live origin can survive there.
+     * On Playwright 1.23–1.59 the per-entry hook can run for a redirect entry
+     * before the tracer has finished it: `response.redirectURL` is assigned when
+     * the follow-up request starts and the response headers can be replaced
+     * afterwards. The live origin can survive in `redirectURL` and the marker the
+     * hook added can be lost, for redirect entries only.
      */
-    ignoreRedirectURL?: boolean;
+    legacyRedirects?: boolean;
 };
+
+function isRedirect(entry: Entry): boolean {
+    return entry.response.status >= 300 && entry.response.status < 400;
+}
 
 /**
  * The record-side transforms landed in the file that was actually written:
@@ -142,8 +148,12 @@ export type ScrubOptions = {
 export function expectScrubbed(
     har: HARFile,
     realOrigin: string,
-    { ignoreRedirectURL = false }: ScrubOptions = {},
+    { legacyRedirects = false }: ScrubOptions = {},
 ): void {
+    const complete = legacyRedirects
+        ? har.log.entries.filter((entry) => !isRedirect(entry))
+        : har.log.entries;
+
     expect(har.log.entries.length).toBeGreaterThan(0);
     expect(har.log.entries.every((entry) => entry.request.url.startsWith(PLACEHOLDER))).toBe(true);
     expect(
@@ -151,14 +161,15 @@ export function expectScrubbed(
             entry.response.headers.filter((header) => header.name.toLowerCase() === 'set-cookie'),
         ),
     ).toStrictEqual([]);
+    expect(complete.length).toBeGreaterThan(0);
     expect(
-        har.log.entries.every((entry) =>
+        complete.every((entry) =>
             entry.response.headers.some((header) => header.name === MARKER_HEADER),
         ),
     ).toBe(true);
     expect(
         JSON.stringify(har, (key, value: unknown) =>
-            ignoreRedirectURL && key === 'redirectURL' ? undefined : value,
+            legacyRedirects && key === 'redirectURL' ? undefined : value,
         ),
     ).not.toContain(realOrigin);
 }
