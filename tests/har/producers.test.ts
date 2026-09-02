@@ -1,4 +1,5 @@
-import { access } from 'node:fs/promises';
+import { access, readdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 
 import type { BrowserContext } from '@playwright/test';
 import { expect, test } from '@playwright/test';
@@ -25,6 +26,10 @@ async function exists(file: string): Promise<boolean> {
     } catch {
         return false;
     }
+}
+
+async function recordingDirectoriesNextTo(file: string): Promise<string[]> {
+    return (await readdir(dirname(file))).filter((name) => name.startsWith('.har-recording-'));
 }
 
 // Every way Playwright can write a dump, each proven by the bytes on disk. A
@@ -180,7 +185,43 @@ test.describe('dump producers', () => {
         await context.close();
 
         expect(await exists(path)).toBe(true);
-        expect(await exists(`${path}.recording.zip`)).toBe(false);
+        expect(await recordingDirectoriesNextTo(path)).toStrictEqual([]);
+    });
+
+    test('browser.close() before context.close() leaves nothing behind and does not throw', async ({
+        playwright,
+        browserName,
+    }, testInfo) => {
+        const warnings: string[] = [];
+        const originalWarn = console.warn;
+
+        console.warn = (...args: unknown[]) => {
+            warnings.push(args.map(String).join(' '));
+        };
+
+        try {
+            const path = testInfo.outputPath('abandoned.har.zip');
+            const browser = await playwright[browserName].launch();
+            const context = await browser.newContext({ recordHar: { path } });
+            const page = await context.newPage();
+
+            await page.goto(`${origin.baseURL}/`);
+            await expect(page.locator('#out')).toContainText('RECORDED');
+
+            await browser.close();
+            await context.close();
+
+            // Playwright never exported the recording: no dump, no recording directory.
+            await expect.poll(() => recordingDirectoriesNextTo(path)).toStrictEqual([]);
+            expect(await exists(path)).toBe(false);
+
+            if (getHarEngineTier() === 'public-api') {
+                expect(warnings.join('\n')).toContain('record-not-exported');
+                expect(warnings.join('\n')).toContain(path);
+            }
+        } finally {
+            console.warn = originalWarn;
+        }
     });
 
     test('replays through the userland fallback engine', async ({ browser }, testInfo) => {

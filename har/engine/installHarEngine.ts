@@ -1,3 +1,7 @@
+import { randomBytes } from 'node:crypto';
+import { mkdir, readdir, rm } from 'node:fs/promises';
+import { basename, dirname, join } from 'node:path';
+
 import type { Browser, BrowserContext, BrowserType, Page, Tracing } from '@playwright/test';
 
 import { getPlaywrightCoreEntries } from '../getPlaywrightCoreModule';
@@ -13,6 +17,9 @@ import { tryNativeHarReplay } from './nativeHarReplay';
 const INSTALL_TOKEN = {};
 
 const BROWSER_TYPES = ['chromium', 'firefox', 'webkit'] as const;
+
+/** `<dump dir>/.har-recording-<pid>-<id>/<dump name>`, see `recordingTempPath`. */
+export const RECORDING_DIR_PREFIX = '.har-recording-';
 const BROWSER_FACTORIES = ['launch', 'connect', 'connectOverCDP'] as const;
 
 type Patchable = Record<string | symbol, unknown>;
@@ -25,6 +32,7 @@ export type ReplayEngine = 'native' | 'fallback';
 
 const pendingTasks = new WeakMap<BrowserContext, Map<string, CloseTask>>();
 const closings = new WeakMap<BrowserContext, Promise<void>>();
+const closeEventHooked = new WeakSet<BrowserContext>();
 const tracingOwners = new WeakMap<Tracing, BrowserContext>();
 const pendingStartHar = new WeakMap<Tracing, HarPostProcessTask>();
 
@@ -32,12 +40,71 @@ let eagerlyInstalled = false;
 let lastReplayEngine: ReplayEngine | undefined;
 
 /**
- * Playwright writes the recording to this path, we post-process it into the
- * requested one. If anything goes wrong the dump is simply missing instead of
- * being committed with unscrubbed headers.
+ * Playwright writes the recording here, we post-process it into the requested
+ * path. If anything goes wrong the dump is simply missing instead of being
+ * committed with unscrubbed headers.
+ *
+ * The recording gets a private directory next to the dump: Playwright writes the
+ * body blobs of an unpacked dump into the recording's directory, and this way a
+ * failed recording can be removed whole without touching the blobs of the dumps
+ * that are already there. The directory name carries the pid, so that a
+ * recording abandoned by a dead process can be told from one in progress.
  */
 export function recordingTempPath(targetPath: string): string {
-    return targetPath.endsWith('.zip') ? `${targetPath}.recording.zip` : `${targetPath}.recording`;
+    const id = `${process.pid}-${randomBytes(4).toString('hex')}`;
+
+    return join(dirname(targetPath), `${RECORDING_DIR_PREFIX}${id}`, basename(targetPath));
+}
+
+function recordingOwner(directoryName: string): number | undefined {
+    const match = /^\.har-recording-(\d+)-/.exec(directoryName);
+
+    return match ? Number(match[1]) : undefined;
+}
+
+function isProcessAlive(pid: number): boolean {
+    try {
+        process.kill(pid, 0);
+
+        return true;
+    } catch (error) {
+        return (error as NodeJS.ErrnoException).code === 'EPERM';
+    }
+}
+
+/**
+ * Creates the recording directory and removes the recordings left behind by
+ * processes that are gone: they hold whatever the transforms were meant to
+ * scrub and nobody else is going to clean them up.
+ */
+async function prepareRecording(task: HarPostProcessTask): Promise<void> {
+    const recordingDir = dirname(task.sourcePath);
+    const dumpDir = dirname(recordingDir);
+
+    await mkdir(recordingDir, { recursive: true });
+
+    let siblings: string[];
+
+    try {
+        siblings = await readdir(dumpDir);
+    } catch {
+        return;
+    }
+
+    for (const name of siblings) {
+        const owner = recordingOwner(name);
+
+        if (owner === undefined || owner === process.pid || isProcessAlive(owner)) {
+            continue;
+        }
+
+        await rm(join(dumpDir, name), { recursive: true, force: true });
+        degrade(
+            'stale-recording-removed',
+            `Removed ${join(dumpDir, name)}, an unfinished HAR recording of a process that ` +
+                'is gone (a crashed or killed run). The dump it was recording was not updated.',
+        );
+    }
 }
 
 /** Test seam: which engine served the most recent replay of this worker. */
@@ -154,9 +221,36 @@ function closeOnce(context: BrowserContext, originalClose: () => Promise<void>):
     return closing;
 }
 
+/**
+ * `context.close()` runs the tasks itself once Playwright has exported the
+ * recording. The `close` event without it means the browser went away first —
+ * `browser.close()`, a crash — and nothing was exported: the tasks then only
+ * report that and remove the recording directory.
+ */
+function hookContextCloseEvent(context: BrowserContext): void {
+    if (closeEventHooked.has(context)) {
+        return;
+    }
+
+    closeEventHooked.add(context);
+
+    context.once('close', () => {
+        if (closings.has(context)) {
+            return;
+        }
+
+        void runCloseTasks(context).catch((error: unknown) => {
+            console.error(
+                `[@gravity-ui/playwright-tools] ${(error as Error).message ?? String(error)}`,
+            );
+        });
+    });
+}
+
 function scheduleHarPostProcessing(context: BrowserContext, task: HarPostProcessTask): void {
     // Guarantees that `close` of this context runs the task.
     wrapContext(context);
+    hookContextCloseEvent(context);
 
     const tasks = pendingTasks.get(context) ?? new Map<string, CloseTask>();
 
@@ -220,6 +314,7 @@ function wrapRouteFromHAR(prototype: Patchable): void {
                 if (routeOptions.update) {
                     const task = { sourcePath: recordingTempPath(file), targetPath: file };
 
+                    await prepareRecording(task);
                     await original.call(this, task.sourcePath, routeOptions);
 
                     scheduleHarPostProcessing(contextOf(target), task);
@@ -285,6 +380,9 @@ function wrapTracing(context: BrowserContext): void {
                 const tracingTarget = this as Tracing;
                 const targetPath = path as string;
                 const task = { sourcePath: recordingTempPath(targetPath), targetPath };
+
+                await prepareRecording(task);
+
                 const result = await original.call(this, task.sourcePath, ...rest);
                 const owner = tracingOwners.get(tracingTarget);
 
@@ -374,6 +472,11 @@ function wrapBrowser(browser: Browser): void {
         (original) =>
             async function newContext(this: unknown, options?: unknown) {
                 const redirected = redirectRecordHar(options as RecordHarOptions | undefined);
+
+                if (redirected.task) {
+                    await prepareRecording(redirected.task);
+                }
+
                 const context = (await original.call(this, redirected.options)) as BrowserContext;
 
                 adoptContext(context, redirected.task);
@@ -419,6 +522,11 @@ function wrapBrowserType(prototype: Patchable): boolean {
                     options?: unknown,
                 ) {
                     const redirected = redirectRecordHar(options as RecordHarOptions | undefined);
+
+                    if (redirected.task) {
+                        await prepareRecording(redirected.task);
+                    }
+
                     const context = (await original.call(
                         this,
                         userDataDir,

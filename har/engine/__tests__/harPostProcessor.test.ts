@@ -1,12 +1,23 @@
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    jest,
+} from '@jest/globals';
 
 import type { Entry, HARFile } from '../../types';
 import { readZipEntries, writeZipEntries } from '../../vendor/zip';
+import { resetDegradations } from '../diagnostics';
 import { postProcessHarDump } from '../harPostProcessor';
+import { recordingTempPath } from '../installHarEngine';
 import { resetHarTransforms, setFixtureHarTransforms } from '../transformRegistry';
 
 function makeEntry(url: string, blob?: string, postBlob?: string): Entry {
@@ -61,6 +72,7 @@ async function exists(file: string) {
 describe('postProcessHarDump', () => {
     let directory: string;
     let counter = 0;
+    let warn: ReturnType<typeof jest.spyOn>;
 
     beforeAll(async () => {
         directory = await mkdtemp(join(tmpdir(), 'playwright-tools-post-test-'));
@@ -70,12 +82,32 @@ describe('postProcessHarDump', () => {
         await rm(directory, { force: true, recursive: true });
     });
 
+    beforeEach(() => {
+        warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    });
+
     afterEach(() => {
+        warn.mockRestore();
+        resetDegradations();
         resetHarTransforms({ global: true });
     });
 
+    /** The private recording directory of a dump, the way the engine lays it out. */
+    async function recordingFor(target: string) {
+        const source = recordingTempPath(target);
+
+        await mkdir(dirname(source), { recursive: true });
+
+        return source;
+    }
+
+    async function recordingDirectories() {
+        return (await readdir(directory)).filter((name) => name.startsWith('.har-recording-'));
+    }
+
     async function writeArchive(entries: Entry[], blobs: Record<string, string> = {}) {
-        const source = join(directory, `source-${++counter}.har.zip`);
+        const target = join(directory, `target-${++counter}.har.zip`);
+        const source = await recordingFor(target);
         const members = new Map<string, Buffer>([
             ['har.har', Buffer.from(JSON.stringify(makeHar(entries)), 'utf8')],
         ]);
@@ -86,7 +118,20 @@ describe('postProcessHarDump', () => {
 
         await writeZipEntries(source, members);
 
-        return { source, target: join(directory, `target-${counter}.har.zip`) };
+        return { source, target };
+    }
+
+    async function writePlain(entries: Entry[], blobs: Record<string, string> = {}) {
+        const target = join(directory, `target-${++counter}.har`);
+        const source = await recordingFor(target);
+
+        await writeFile(source, JSON.stringify(makeHar(entries)), 'utf8');
+
+        for (const [name, body] of Object.entries(blobs)) {
+            await writeFile(join(dirname(source), name), body, 'utf8');
+        }
+
+        return { source, target };
     }
 
     async function readArchivedHar(file: string) {
@@ -104,6 +149,7 @@ describe('postProcessHarDump', () => {
         await postProcessHarDump({ sourcePath: source, targetPath: target });
 
         expect(await exists(source)).toBe(false);
+        expect(await recordingDirectories()).toStrictEqual([]);
         expect((await readArchivedHar(target)).har.log.entries).toHaveLength(1);
     });
 
@@ -197,7 +243,59 @@ describe('postProcessHarDump', () => {
         expect(members.get('keep-post-blob')!.toString('utf8')).toBe('kept-post');
     });
 
-    it('post-processes an uncompressed dump in place of the recording', async () => {
+    it('post-processes an uncompressed dump and moves the blobs it references', async () => {
+        const { source, target } = await writePlain(
+            [
+                makeEntry('https://example.test/keep', 'keep-blob.json', 'keep-post-blob.json'),
+                makeEntry('https://example.test/drop', 'drop-blob.json'),
+            ],
+            {
+                'keep-blob.json': 'kept',
+                'keep-post-blob.json': 'kept-post',
+                'drop-blob.json': 'dropped',
+            },
+        );
+
+        setFixtureHarTransforms({
+            recorder: (entry) => {
+                // eslint-disable-next-line no-param-reassign -- transforms mutate the entry in place
+                entry.request.url = entry.request.url.replace(
+                    'https://example.test',
+                    'https://base.url.placeholder',
+                );
+            },
+            flush: (entries) => entries.filter((entry) => !entry.request.url.endsWith('/drop')),
+        });
+
+        await postProcessHarDump({ sourcePath: source, targetPath: target });
+
+        expect(await exists(source)).toBe(false);
+        expect(await recordingDirectories()).toStrictEqual([]);
+
+        const har = JSON.parse(await readFile(target, 'utf8')) as HARFile;
+
+        expect(har.log.entries.map((entry) => entry.request.url)).toStrictEqual([
+            'https://base.url.placeholder/keep',
+        ]);
+        expect(await readFile(join(directory, 'keep-blob.json'), 'utf8')).toBe('kept');
+        expect(await readFile(join(directory, 'keep-post-blob.json'), 'utf8')).toBe('kept-post');
+        expect(await exists(join(directory, 'drop-blob.json'))).toBe(false);
+    });
+
+    it('moves the blobs of an uncompressed dump even when nothing is registered', async () => {
+        const { source, target } = await writePlain(
+            [makeEntry('https://example.test/a', 'plain-blob.json')],
+            { 'plain-blob.json': 'body' },
+        );
+
+        await postProcessHarDump({ sourcePath: source, targetPath: target });
+
+        expect(await exists(target)).toBe(true);
+        expect(await readFile(join(directory, 'plain-blob.json'), 'utf8')).toBe('body');
+        expect(await recordingDirectories()).toStrictEqual([]);
+    });
+
+    it('supports a recording that has no private directory', async () => {
         const source = join(directory, 'plain-source.har');
         const target = join(directory, 'plain-target.har');
 
@@ -207,21 +305,53 @@ describe('postProcessHarDump', () => {
             'utf8',
         );
 
-        setFixtureHarTransforms({
-            recorder: (entry) => {
-                // eslint-disable-next-line no-param-reassign -- transforms mutate the entry in place
-                entry.request.url = 'https://base.url.placeholder/a';
-            },
-        });
-
         await postProcessHarDump({ sourcePath: source, targetPath: target });
 
         expect(await exists(source)).toBe(false);
-
-        const har = JSON.parse(await readFile(target, 'utf8')) as HARFile;
-
-        expect(har.log.entries[0]!.request.url).toBe('https://base.url.placeholder/a');
+        expect(await exists(target)).toBe(true);
     });
+
+    it('reports a recording Playwright never exported and cleans up', async () => {
+        const target = join(directory, 'never-exported.har.zip');
+        const source = await recordingFor(target);
+
+        await postProcessHarDump({ sourcePath: source, targetPath: target });
+
+        expect(await exists(target)).toBe(false);
+        expect(await recordingDirectories()).toStrictEqual([]);
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(warn.mock.calls[0]![0]).toContain('record-not-exported');
+        expect(warn.mock.calls[0]![0]).toContain(target);
+    });
+
+    it.each(['zip', 'plain'] as const)(
+        'removes the %s recording, its blobs and the dump when a transform fails',
+        async (kind) => {
+            const entries = [makeEntry('https://example.test/a', 'failing-blob.json')];
+            const blobs = { 'failing-blob.json': 'unscrubbed' };
+            const { source, target } =
+                kind === 'zip'
+                    ? await writeArchive(entries, blobs)
+                    : await writePlain(entries, blobs);
+
+            setFixtureHarTransforms({
+                recorder: () => {
+                    throw new Error('transform failed');
+                },
+            });
+
+            await expect(
+                postProcessHarDump({ sourcePath: source, targetPath: target }),
+            ).rejects.toThrow(
+                `[@gravity-ui/playwright-tools] Failed to post-process the HAR dump ${target}: transform failed`,
+            );
+
+            expect(await exists(source)).toBe(false);
+            expect(await exists(target)).toBe(false);
+            expect(await exists(join(directory, 'failing-blob.json'))).toBe(false);
+            expect(await recordingDirectories()).toStrictEqual([]);
+        },
+    );
 
     it('writes the dump the way Playwright formats it', async () => {
         const { source, target } = await writeArchive([makeEntry('https://example.test/a')]);
