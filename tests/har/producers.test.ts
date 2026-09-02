@@ -192,10 +192,15 @@ test.describe('dump producers', () => {
         playwright,
         browserName,
     }, testInfo) => {
+        // A warning, or an error in strict mode, where the engine throws instead.
         const warnings: string[] = [];
         const originalWarn = console.warn;
+        const originalError = console.error;
 
         console.warn = (...args: unknown[]) => {
+            warnings.push(args.map(String).join(' '));
+        };
+        console.error = (...args: unknown[]) => {
             warnings.push(args.map(String).join(' '));
         };
 
@@ -221,6 +226,7 @@ test.describe('dump producers', () => {
             }
         } finally {
             console.warn = originalWarn;
+            console.error = originalError;
         }
     });
 

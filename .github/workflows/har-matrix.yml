@@ -60,6 +60,10 @@ jobs:
       - name: Install Browser
         run: npx playwright install --with-deps chromium
       - name: HAR Integration Tests
+        # Strict mode turns every `HAR engine degraded` warning into an error, so
+        # that a job cannot go green on a silently downgraded engine.
+        env:
+          PLAYWRIGHT_TOOLS_HAR_STRICT: '1'
         run: npm run test:har
       - name: Upload Report
         if: failure()
@@ -111,4 +115,6 @@ jobs:
         # with it, and npx then tries to fetch `playwright` from the registry.
         run: node node_modules/playwright/cli.js install --with-deps chromium
       - name: HAR Integration Tests
+        env:
+          PLAYWRIGHT_TOOLS_HAR_STRICT: '1'
         run: node node_modules/playwright/cli.js test --config=tests/har/playwright.config.ts
