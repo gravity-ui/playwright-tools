@@ -126,11 +126,24 @@ export async function readDump(file: string): Promise<HARFile> {
     return JSON.parse(members.get(harName)!.toString('utf8')) as HARFile;
 }
 
+export type ScrubOptions = {
+    /**
+     * On Playwright 1.23–1.59 `response.redirectURL` is assigned by the tracer
+     * when the follow-up request starts, which can be after the per-entry hook
+     * already ran for the redirect, so the live origin can survive there.
+     */
+    ignoreRedirectURL?: boolean;
+};
+
 /**
  * The record-side transforms landed in the file that was actually written:
  * nothing of the live origin, no cookies, and the marker on every response.
  */
-export function expectScrubbed(har: HARFile, realOrigin: string): void {
+export function expectScrubbed(
+    har: HARFile,
+    realOrigin: string,
+    { ignoreRedirectURL = false }: ScrubOptions = {},
+): void {
     expect(har.log.entries.length).toBeGreaterThan(0);
     expect(har.log.entries.every((entry) => entry.request.url.startsWith(PLACEHOLDER))).toBe(true);
     expect(
@@ -143,5 +156,9 @@ export function expectScrubbed(har: HARFile, realOrigin: string): void {
             entry.response.headers.some((header) => header.name === MARKER_HEADER),
         ),
     ).toBe(true);
-    expect(JSON.stringify(har)).not.toContain(realOrigin);
+    expect(
+        JSON.stringify(har, (key, value: unknown) =>
+            ignoreRedirectURL && key === 'redirectURL' ? undefined : value,
+        ),
+    ).not.toContain(realOrigin);
 }

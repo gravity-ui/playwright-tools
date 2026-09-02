@@ -214,7 +214,14 @@ test.describe('dump producers', () => {
             await expect(page.locator('#out')).toContainText('RECORDED');
 
             await browser.close();
-            await context.close();
+
+            if (getHarEngineTier() === 'public-api') {
+                await context.close();
+            } else {
+                // Older Playwright versions reject a close() of a context whose
+                // browser is gone; that is Playwright's own behaviour.
+                await context.close().catch(() => undefined);
+            }
 
             // Playwright never exported the recording: no dump, no recording directory.
             await expect.poll(() => recordingDirectoriesNextTo(path)).toStrictEqual([]);
