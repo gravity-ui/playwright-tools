@@ -170,17 +170,6 @@ export type SecurityDetails = {
 
 // Types from https://github.com/microsoft/playwright/blob/main/packages/protocol/src/channels.ts
 
-export type Metadata = {
-    location?: {
-        file: string;
-        line?: number;
-        column?: number;
-    };
-    apiName?: string;
-    internal?: boolean;
-    wallTime?: number;
-};
-
 export type LocalUtilsHarLookupParams = {
     harId: string;
     url: string;

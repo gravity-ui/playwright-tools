@@ -1,14 +1,12 @@
 import {
     type Entry,
+    type HARFile,
     type LocalUtilsHarLookupParams,
     type LocalUtilsHarLookupResult,
-    addFlushTransform,
-    addHarLookupTransform,
-    addHarOpenTransform,
-    addHarRecorderTransform,
     clearHeaders,
     replaceBaseUrlInEntry,
 } from '../../har';
+import { setFixtureHarTransforms } from '../../har/engine/transformRegistry';
 import { createDuplicateIdTransform } from '../../utils/createDuplicateIdTransform';
 import { markIdenticalRequests } from '../../utils/markIdenticalRequests';
 
@@ -60,7 +58,10 @@ export function harPatcher({
         ...additionalSetCookieToRemove,
     ]);
 
-    addHarRecorderTransform((entry) => {
+    // The fixture runs once per test, so its transforms are registered as fixture
+    // transforms: they replace the previous test's ones instead of being latched
+    // for the whole worker process the way the add*Transform functions are.
+    const recorder = (entry: Entry) => {
         // eslint-disable-next-line no-param-reassign
         entry.request.headers = clearHeaders(entry.request.headers, {
             removeHeaders: headersToRemove,
@@ -74,16 +75,16 @@ export function harPatcher({
         replaceBaseUrlInEntry(entry, baseURL, baseUrlPLaceholder);
 
         onHarEntryWillWrite?.(entry, baseURL);
-    });
+    };
 
-    addHarOpenTransform((harFile) => {
+    const open = (harFile: HARFile) => {
         const entries = harFile.log.entries;
 
         for (const entry of entries) {
             replaceBaseUrlInEntry(entry, baseUrlPLaceholder, baseURL);
             onHarEntryWillRead?.(entry, baseURL);
         }
-    });
+    };
 
     // Create duplicate ID transformer once to preserve state between calls
     const duplicateIdTransform = shouldMarkIdenticalRequests ? createDuplicateIdTransform() : null;
@@ -107,10 +108,8 @@ export function harPatcher({
             : result;
     };
 
-    addHarLookupTransform(onTransformHarLookupParamsFinal, onTransformHarLookupResultFinal);
-
     // Transform requests before writing to har file
-    addFlushTransform((entries) => {
+    const flush = (entries: Entry[]) => {
         // Before writing to har file, filter out canceled requests
         const filteredEntries = entries.filter((entry: Entry) => entry.time !== -1);
 
@@ -120,5 +119,13 @@ export function harPatcher({
         }
 
         return filteredEntries;
+    };
+
+    setFixtureHarTransforms({
+        recorder,
+        open,
+        lookupParams: onTransformHarLookupParamsFinal,
+        lookupResult: onTransformHarLookupResultFinal,
+        flush,
     });
 }

@@ -1,0 +1,120 @@
+name: HAR Playwright Matrix
+
+# A released Playwright version cannot change its behaviour, so re-running the
+# engine against the frozen ones is only informative when something moves:
+#
+#   - the mechanism changes    -> a pull request touching the paths below, which
+#                                 also covers adding a version to the matrix
+#   - a new version appears    -> the nightly run, which only tests the moving
+#                                 targets (`latest` and `next`)
+#
+# Everything else would be re-proving the same result.
+on:
+  pull_request:
+    paths:
+      - 'har/**'
+      - 'fixtures/mock-network/**'
+      - 'tests/har/**'
+      - '.github/workflows/har-matrix.yml'
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  har_matrix:
+    # Playwright 1.59 is the last release on the legacy internal tier; 1.60 is
+    # the first release on the public-API tier after lib/server/** was bundled.
+    #
+    # The full range runs when the mechanism changes, i.e. on a pull request that
+    # touches it. The nightly run only needs `latest`: the frozen versions cannot
+    # start behaving differently on their own.
+    name: HAR (playwright ${{ matrix.playwright }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        playwright: ${{ github.event_name == 'pull_request' && fromJSON('["1.49.1", "1.51.0", "1.58.1", "1.59.0", "1.60.0", "latest"]') || fromJSON('["latest"]') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - name: Install Packages
+        run: npm ci
+      - name: Pin Playwright
+        run: |
+          # The component-testing package pulls its own @playwright/test, and two
+          # copies in one tree make the runner refuse to collect any test.
+          npm install --no-save --no-package-lock \
+            "@playwright/test@${{ matrix.playwright }}" \
+            "playwright@${{ matrix.playwright }}" \
+            "playwright-core@${{ matrix.playwright }}" \
+            "@playwright/experimental-ct-react@${{ matrix.playwright }}"
+          node -e "console.log('playwright-core', require('playwright-core/package.json').version)"
+          test "$(find node_modules -path '*/@playwright/test/package.json' | wc -l)" -eq 1 \
+            || { echo 'More than one @playwright/test in the tree'; \
+                 find node_modules -path '*/@playwright/test/package.json'; exit 1; }
+      - name: Install Browser
+        run: npx playwright install --with-deps chromium
+      - name: HAR Integration Tests
+        # Strict mode turns every `HAR engine degraded` warning into an error, so
+        # that a job cannot go green on a silently downgraded engine.
+        env:
+          PLAYWRIGHT_TOOLS_HAR_STRICT: '1'
+        run: npm run test:har
+      - name: Upload Report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: har-report-${{ matrix.playwright }}
+          path: playwright-report-har
+          retention-days: 7
+
+  har_canary:
+    # The other moving target. `next` is published daily, and the 1.60 bundling
+    # landed there 34 days before it shipped in a stable release. Allowed to fail,
+    # and kept off pull requests — a broken nightly alpha is not a review comment.
+    name: HAR (playwright next)
+    runs-on: ubuntu-22.04
+    if: github.event_name != 'pull_request'
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - name: Install Packages
+        run: npm ci
+      - name: Pin Playwright
+        run: |
+          npm install --no-save --no-package-lock \
+            "@playwright/test@next" "playwright@next" "playwright-core@next"
+          # The component-testing packages are not published for the nightlies, so
+          # they stay behind on their own Playwright and the runner ends up with two
+          # copies, which collects no tests. Drop them *after* the install, or npm
+          # restores them from devDependencies. The canary runs no component tests.
+          rm -rf node_modules/@playwright/experimental-ct-react \
+                 node_modules/@playwright/experimental-ct-core
+          node -e "console.log('playwright-core', require('playwright-core/package.json').version)"
+          for package in '@playwright/test' playwright; do
+            found="$(find node_modules -path "*/$package/package.json" | wc -l)"
+            test "$found" -eq 1 || {
+              echo "Expected exactly one copy of $package, found $found"
+              find node_modules -path "*/$package/package.json"
+              exit 1
+            }
+          done
+      - name: Install Browser
+        # Not `npx`: dropping the component-testing packages takes the bin shim
+        # with it, and npx then tries to fetch `playwright` from the registry.
+        run: node node_modules/playwright/cli.js install --with-deps chromium
+      - name: HAR Integration Tests
+        env:
+          PLAYWRIGHT_TOOLS_HAR_STRICT: '1'
+        run: node node_modules/playwright/cli.js test --config=tests/har/playwright.config.ts

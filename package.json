@@ -22,6 +22,8 @@
     "/data/**/*.*(js|d.ts)",
     "/fixtures/**/*.*(js|d.ts)",
     "/har/**/*.*(js|d.ts)",
+    "/har/vendor/LICENSE-Apache-2.0.txt",
+    "/har/vendor/NOTICE",
     "/utils/**/*.*(js|d.ts)",
     "!/**/__tests__",
     "!/tests/**/*"
@@ -70,6 +72,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint --ext .ts ./",
     "test": "jest --colors --config=jest.config.js",
+    "test:har": "playwright test --config=tests/har/playwright.config.ts",
+    "test:har:install": "playwright install chromium --with-deps",
     "test:integration": "playwright test --config=tests/playwright.config.ts",
     "test:integration:install": "playwright install chromium --with-deps",
     "test:integration:update": "npm run test:integration -- -u",

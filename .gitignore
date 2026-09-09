@@ -122,3 +122,4 @@ playwright-report/
 test-results/
 tests/report
 tests/report-docker
+/playwright-report-har/

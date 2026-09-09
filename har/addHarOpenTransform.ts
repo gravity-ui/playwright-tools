@@ -1,56 +1,19 @@
-import { getPlaywrightCoreModule } from './getPlaywrightCoreModule';
-import type { HARFile } from './types';
+import { installHarEngine } from './engine/installHarEngine';
+import type { HarTransformFunction } from './engine/transformRegistry';
+import { registerLegacyTransforms } from './engine/transformRegistry';
 
-export type HarTransformFunction = (harFile: HARFile) => void;
-
-function wrapLocalUtilsDispatcherMethods(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    LocalUtilsDispatcher: any,
-    transform: HarTransformFunction,
-) {
-    const originalHarOpen: Function = LocalUtilsDispatcher.prototype.harOpen;
-
-    if (originalHarOpen) {
-        // eslint-disable-next-line no-param-reassign
-        LocalUtilsDispatcher.prototype.harOpen = async function harOpen(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            this: any,
-            ...rest: unknown[]
-        ) {
-            const result = await originalHarOpen.apply(this, rest);
-
-            const harBackends = this._harBackends || this._harBakends;
-            const harBackend = harBackends.get(result.harId);
-            const harFile: HARFile = harBackend._harFile;
-
-            if (harFile) {
-                transform(harFile);
-            }
-
-            return result;
-        };
-    } else {
-        throw new Error('Can\'t find "harOpen" method in "LocalUtilsDispatcher" class.');
-    }
-}
-
-let patchInited = false;
-
-function initLocalUtilsDispatcherPatch(transform: HarTransformFunction) {
-    patchInited = true;
-
-    const modules = getPlaywrightCoreModule('lib/server/dispatchers/localUtilsDispatcher');
-
-    for (const module of modules) {
-        wrapLocalUtilsDispatcherMethods(module.LocalUtilsDispatcher, transform);
-    }
-}
+export type { HarTransformFunction } from './engine/transformRegistry';
 
 /**
  * Allows you to make changes to the JSON read from an open HAR file
+ *
+ * The transform is consumed when `routeFromHAR()` opens the dump, so it has to be
+ * registered before `initDumps()` / `routeFromHAR()` — at module level or in a
+ * fixture that runs earlier. Registering it after a dump has already been opened
+ * in the worker throws. The first call wins for the whole worker process; later
+ * calls are ignored with a warning.
  */
 export function addHarOpenTransform(transform: HarTransformFunction) {
-    if (!patchInited) {
-        initLocalUtilsDispatcherPatch(transform);
-    }
+    registerLegacyTransforms('open', { open: transform });
+    installHarEngine();
 }
