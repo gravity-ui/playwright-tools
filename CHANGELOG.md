@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.2](https://github.com/gravity-ui/playwright-tools/compare/v2.0.1...v2.0.2) (2026-09-09)
+
+
+### Bug Fixes
+
+* **mount:** fix component updates ([#65](https://github.com/gravity-ui/playwright-tools/issues/65)) ([24572d7](https://github.com/gravity-ui/playwright-tools/commit/24572d7ae8b5d0c527b4cc7955b4fdc7ef923299))
+* support HAR transforms on modern Playwright ([#64](https://github.com/gravity-ui/playwright-tools/issues/64)) ([d93a1bc](https://github.com/gravity-ui/playwright-tools/commit/d93a1bc3486256c2650462bf8a3049b4ae344a8a))
+
 ## [2.0.1](https://github.com/gravity-ui/playwright-tools/compare/v2.0.0...v2.0.1) (2026-02-27)
 
 
