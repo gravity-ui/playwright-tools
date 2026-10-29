@@ -228,11 +228,22 @@ function resolveScreenshotName(params: { name?: string; slug?: string }) {
         return undefined;
     }
 
-    const fileName = `${name}.png`;
-
     // Playwright sanitizes a string name, but treats an array as ready path segments. The array is
-    // only needed to keep the slug a separate directory, so pass a string when there is no slug.
-    return slug ? [slug, fileName] : fileName;
+    // only needed to keep the slug a separate directory, so pass a string when there is no slug,
+    // and sanitize the segments the same way when there is one.
+    if (!slug) {
+        return `${name}.png`;
+    }
+
+    return [sanitizeForFilePath(slug), `${sanitizeForFilePath(name)}.png`];
+}
+
+// Mirrors the rule Playwright applies to a string snapshot name
+// eslint-disable-next-line no-control-regex
+const UNSAFE_FILE_PATH_CHARS = /[\x00-\x2C\x2E-\x2F\x3A-\x40\x5B-\x60\x7B-\x7F]+/g;
+
+function sanitizeForFilePath(value: string) {
+    return value.replace(UNSAFE_FILE_PATH_CHARS, '-');
 }
 
 async function appendStylesToPage(page: Page, styles: string) {

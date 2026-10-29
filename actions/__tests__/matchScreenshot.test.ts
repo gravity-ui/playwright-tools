@@ -48,6 +48,21 @@ describe('matchScreenshot', () => {
         expect(toHaveScreenshot).toHaveBeenCalledWith(['card-tests', 'collapsed.png'], {});
     });
 
+    it('sanitizes the segments of a name that goes with a slug', async () => {
+        getTestSlug.mockReturnValue('card tests');
+
+        await matchScreenshot(page, {
+            name: 'wide card: collapsed',
+            pause: 0,
+            shouldPrependSlugToName: true,
+        });
+
+        expect(toHaveScreenshot).toHaveBeenCalledWith(
+            ['card-tests', 'wide-card-collapsed.png'],
+            {},
+        );
+    });
+
     it('adds the theme to the name of every screenshot', async () => {
         await matchScreenshot(page, {
             name: 'collapsed',
