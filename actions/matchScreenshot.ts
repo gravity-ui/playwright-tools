@@ -228,13 +228,11 @@ function resolveScreenshotName(params: { name?: string; slug?: string }) {
         return undefined;
     }
 
-    const resolvedName = [name + '.png'];
+    const fileName = `${name}.png`;
 
-    if (slug) {
-        resolvedName.unshift(slug);
-    }
-
-    return resolvedName;
+    // Playwright sanitizes a string name, but treats an array as ready path segments. The array is
+    // only needed to keep the slug a separate directory, so pass a string when there is no slug.
+    return slug ? [slug, fileName] : fileName;
 }
 
 async function appendStylesToPage(page: Page, styles: string) {
